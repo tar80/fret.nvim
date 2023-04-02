@@ -1,0 +1,13 @@
+{
+    "$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+    "Lua.diagnostics.globals": [
+        "vim",
+        "describe",
+        "before_each",
+        "after_each",
+        "teardown",
+        "setup",
+        "it"
+    ],
+    "Lua.workspace.checkThirdParty": false
+}

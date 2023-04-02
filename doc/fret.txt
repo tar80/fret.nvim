@@ -1,0 +1,147 @@
+fret.txt        Brilliant horizontal cursor movement
+
+Author:  tar80 <tar80master@google.com>
+License: MIT License
+
+CONTENTS                                                       *fret-contents*
+
+Introduction                                               |fret-introduction|
+Usage                                                             |fret-usage|
+Interface                                                     |fret-interface|
+  function                                                     |fret-function|
+  variable                                                     |fret-variable|
+  configuration                                           |fret-configuration|
+  highlight                                                   |fret-highlight|
+
+==============================================================================
+INTRODUCTION                                               *fret-introduction*
+
+*fret.nvim* is f/t enhancement plugin for Neovim.
+Move the cursor to the desired character with fewer keystrokes.
+
+In addition to the general f/t plugin behavior, it implements Related-mode.
+It provides alternate keys to jump to related character.
+
+==============================================================================
+USAGE                                                             *fret-usage*
+
+Type in f (or F,t,T) to highlight the cursor line
+
+A. To move to a light-colored character, you need to type only once
+B. To move to a dark-colored character, you must type at least twice
+C. The darkest color character is out of scope
+
+          Example of input for how to move to case A.(Normal behavior)
+
+            step1: input "f"
+            step2: input "<lowercase of the target alphabet>"
+
+          Example of input for how to move to case B.(Related-mode)
+
+            step1: input "f"
+            step2: input "shift + <lowercase of the target alphabet>"
+            step3: input "shift + <alternative letter>"
+
+          • The alternative letter is set to the character corresponding to
+            the key pressed when step2 is executed. Also, if there is only one
+            target character, it is immediately moved
+
+Note
+• During the execution of the operator-command, only the characters in case A.
+  will be highlighted
+• Case B. highlighting is for alphabets(and kana charactors)
+
+==============================================================================
+INTERFACE                                                     *fret-interface*
+
+------------------------------------------------------------------------------
+FUNCTION                                                       *fret-function*
+
+setup({cfg})                                             *fret.config.setup()*
+
+        Setup and activate fret
+
+        Parameters: ~
+              {fret_timeout}      (integer):  |g:fret_timeout|
+              {fret_enable_kana}  (boolean):  |g:fret_enable_kana|
+              {mapkeys}           (table):    |fret-mapkeys|
+              {altkeys}           (table):    |fret-altkeys|
+
+
+------------------------------------------------------------------------------
+VARIABLE                                                       *fret-variable*
+
+g:fret_timeout                                                *g:fret_timeout*
+
+        Key waiting time(ms). Upon elapse, the command is terminated.
+
+        Type: `integer`, Default: `0`
+
+g:fret_enable_kana                                        *g:fret_enable_kana*
+
+        Enable move to kana characters.
+
+        Type: `boolean`, Default: `false`
+
+g:_fret_highlights                                        *g:_fret_highlights*
+
+        (Internally)Highlight groups used by fret.nvim
+
+        Type: `dictionary`, Default: [
+          "0": `Non-target characters group`,
+          "1": `Target charcters group`,
+          "2": `Sub-target characters group`,
+          "3": `Alternative characters group`
+        ]
+ 
+------------------------------------------------------------------------------
+CONFIGURATION                                             *fret-configuration*
+
+*fret.nvim* does not provide <Plug> keys.
+It automatically registers keymaps from the |fret-mapkeys| values.
+
+Default settings~
+
+mapkeys                                                         *fret-mapkeys*
+
+        Keys to assign fret function.
+
+        Type: `table`,
+        Default: {
+          fret_f = "f"
+          fret_F = "F"
+          fret_t = "t"
+          fret_T = "T"
+        }
+
+altkeys                                                         *fret-altkeys*
+
+        Alternative letters to assign to Left/Right shift-key in Related-mode.
+
+        Type: `table`,
+        Default: {
+          lshift = "JKLUIOPNMHY",
+          rshift = "FDSAREWQVCXZTGB"
+        }
+
+------------------------------------------------------------------------------
+HIGHLIGHT                                                     *fret-highlight*
+
+FretConfirm~
+
+        Used for characters that move the cursor to that position when entered
+
+FretCandidate~
+
+        Used for characters that are candidates for related-mode
+
+FretIgnore~
+
+        Used for characters not covered by *fret.nvim*
+
+FretAlternative~
+
+        Used for alternative letters
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:fen:fdl=0:fdm=marker:
