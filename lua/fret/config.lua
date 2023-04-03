@@ -4,16 +4,6 @@ local Fret = require('fret')
 ---@field setup function
 M = {}
 
----@param mapkey string Key to assign fret function
----@param key string `f` or `t` or `F` or `T`
----@param direction string `forward` or `backward`
----@param till integer `0` or `1`
-local function map(mapkey, key, direction, till)
-  vim.keymap.set({ 'n', 'x', 'o' }, mapkey, function()
-    return string.format('<Cmd>lua require("fret").inst("%s", "%s", %s, true)<CR>', key, direction, till)
-  end, { expr = true, desc = string.format('fret-%s go %s search', key, direction) })
-end
-
 ---@param t table User configured options
 M.setup = function(t)
   local default_keys = {
@@ -34,7 +24,7 @@ M.setup = function(t)
   if t.mapkeys then
     for k, v in pairs(default_keys) do
       if type(t.mapkeys[k]) == 'string' and #t.mapkeys[k] == 1 then
-        map(t.mapkeys[k], v.key, v.direction, v.till)
+        Fret.keymap(t.mapkeys[k], v.key, v.direction, v.till)
       end
     end
   end

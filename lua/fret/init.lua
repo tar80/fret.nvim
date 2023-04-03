@@ -320,7 +320,7 @@ Score.finish = function(self, mode, proc)
       self.line = ''
       self.indices = ''
       self.match_chars = {}
-      stored = vim.deepcopy(self)
+      stored = vim.deepcopy(session)
     end
   end
 
@@ -426,8 +426,8 @@ Score.gain = function(self, input, mode)
   end
 end
 
-Score.key_in = function(self, row)
-  timer_start(self)
+Score.key_in = function(row)
+  timer_start()
 
   local input = fn.nr2char(fn.getchar())
 
@@ -451,7 +451,7 @@ local function playing(key, direction, till, mode)
 
   session:attach_highlight(mode)
 
-  local input = Score:key_in(row)
+  local input = Score.key_in(row)
   local proc = 'abort'
 
   if input then
@@ -464,7 +464,7 @@ end
 
 local function performing(mode)
   local row, _ = unpack(session.cursor)
-  local input = Score:key_in(row)
+  local input = Score.key_in(row)
 
   if input then
     local count = session.match_chars[input]
@@ -492,17 +492,25 @@ local function dotrepeat(mode)
   Score:finish(mode)
 end
 
-Fret.inst = function(key, direction, till, mapped)
+Fret.inst = function(key, direction, till)
   local mode = fn.mode(1)
   local ok, related = pcall(next, session.match_chars)
 
   if ok and related then
     performing(mode)
-  elseif mapped then
+  elseif session.mapped_trigger then
     playing(key, direction, till, mode)
   else
     dotrepeat(mode)
   end
+end
+
+Fret.keymap = function(mapkey, key, direction, till)
+  vim.keymap.set({ 'n', 'x', 'o' }, mapkey, function()
+    session.mapped_trigger = true
+
+    return string.format('<Cmd>lua require("fret").inst("%s", "%s", %s)<CR>', key, direction, till)
+  end, { expr = true, desc = string.format('fret-%s go %s search', key, direction) })
 end
 
 if _G.fret_debug then

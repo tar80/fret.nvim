@@ -1,9 +1,9 @@
 # 🎸fret.nvim
 
-fret.nvim is provides enhanced f/t mapping for Neovim.
+fret.nvim is provides enhanced f/t mapping for Neovim.  
 Move the cursor to the desired character with fewer keystrokes.
 
-In addition to the general f/t plugin behavior, it implements Related-mode.
+In addition to the general f/t plugin behavior, it implements Related-mode.  
 It provides alternate keys to jump to related character.
 
 ## Features
@@ -55,4 +55,5 @@ Check out these nice plugins.
 
 - [hrsh7th/vim-eft](https://github.com/hrsh7th/vim-eft)
 - [yuki-yano/fuzzy-motion.vim](https://github.com/yuki-yano/fuzzy-motion.vim)
+
 
