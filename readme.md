@@ -56,4 +56,3 @@ Check out these nice plugins.
 - [hrsh7th/vim-eft](https://github.com/hrsh7th/vim-eft)
 - [yuki-yano/fuzzy-motion.vim](https://github.com/yuki-yano/fuzzy-motion.vim)
 
-
