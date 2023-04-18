@@ -151,16 +151,13 @@ Score.sort = function(self, chars)
       table.insert(t, (not self.reverse and #t + 1 or 1), { v, i, 1 })
     end
   else
-    local c, idx, byteidx, bytes, ok
+    local c, idx, byteidx, bytes
     local i, j = 1, 0
+    local chars_len = #chars
 
     ---@see https://zenn.dev/vim_jp/articles/get-charpos-in-neovim
-    repeat
-      ok, idx = pcall(vim.str_utfindex, chars, i)
-
-      if not ok then
-        break
-      end
+    while i <= chars_len do
+      idx = vim.str_utfindex(chars, i)
 
       if idx ~= j then
         j = idx
@@ -180,7 +177,7 @@ Score.sort = function(self, chars)
       end
 
       i = i + 1
-    until false
+    end
   end
 
   return t
@@ -526,7 +523,7 @@ if _G.fret_debug then
     api.nvim_buf_clear_namespace(0, ns, 0, -1)
   end
 
-  Fret._clear_data = function ()
+  Fret._clear_data = function()
     keys = {}
     session = {}
   end
