@@ -13,7 +13,7 @@ It provides alternate keys to jump to related character.
 - [X] Always ignores uppercase and lowercase letters
 - [x] Supports Kana-moji
 
-[demo.webm](https://user-images.githubusercontent.com/45842304/229152547-096a0528-820f-4810-83aa-14d200e4a31f.webm)
+[demo.mp4](https://github.com/tar80/fret.nvim/assets/45842304/08219f7d-3c49-4cc3-828e-78bcd3edc430)
 
 ## Requirements
 
@@ -55,4 +55,3 @@ Check out these nice plugins.
 
 - [hrsh7th/vim-eft](https://github.com/hrsh7th/vim-eft)
 - [yuki-yano/fuzzy-motion.vim](https://github.com/yuki-yano/fuzzy-motion.vim)
-
