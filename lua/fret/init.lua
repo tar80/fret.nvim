@@ -354,10 +354,10 @@ local function attach_extmark(input, lower, row)
   for i = session.truncate, #keys do
     if keys[i].level == 2 and target(keys[i].char, keys[i].altchar) then
       marker = marker_string(keys[i].charwidth, markers[id])
-      byteidx = session.front_byteidx + keys[i].byteidx - keys[i].bytes + 1
+      byteidx = session.front_byteidx + keys[i].byteidx
       session.match_chars[markers[id]] = i
 
-      api.nvim_buf_set_extmark(0, ns, row - 1, byteidx - 1, {
+      api.nvim_buf_set_extmark(0, ns, row - 1, byteidx - keys[i].bytes, {
         id = not _G.fret_debug and id or nil,
         end_row = row - 1,
         end_col = byteidx,
