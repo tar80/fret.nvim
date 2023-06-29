@@ -77,6 +77,20 @@ Score.new = function(key, direction, till)
   return self
 end
 
+local function control_hlsearch()
+  local state = vim.o.hlsearch
+
+  if state then
+    vim.api.nvim_command('nohlsearch')
+  end
+
+  return function()
+    if state then
+      vim.api.nvim_command('set hlsearch')
+    end
+  end
+end
+
 local function define_highlight(char, level, mode)
   local hl = { [0] = hlgroup['0'], [1] = hlgroup['1'], [2] = hlgroup['2'] }
 
@@ -492,6 +506,7 @@ end
 Fret.inst = function(key, direction, till)
   local mode = fn.mode(1)
   local ok, related = pcall(next, session.match_chars)
+  local hlsearch = control_hlsearch()
 
   if ok and related then
     performing(mode)
@@ -500,6 +515,8 @@ Fret.inst = function(key, direction, till)
   else
     dotrepeat(mode)
   end
+
+  hlsearch()
 end
 
 Fret.keymap = function(mapkey, key, direction, till)
