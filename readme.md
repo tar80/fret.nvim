@@ -9,8 +9,8 @@ It provides alternate keys to jump to related character.
 ## Features
 
 - [x] Related-mode is implemented
-- [X] Repeat-keys (`;` `,` `.`) are valid. Excludes Related-mode
-- [X] Always ignores uppercase and lowercase letters
+- [x] Repeat-keys (`;` `,` `.`) are valid. Excludes Related-mode
+- [x] Always ignores uppercase and lowercase letters
 - [x] Supports Kana-moji
 
 [demo.mp4](https://github.com/tar80/fret.nvim/assets/45842304/08219f7d-3c49-4cc3-828e-78bcd3edc430)
@@ -24,7 +24,12 @@ It provides alternate keys to jump to related character.
 - lazy.nvim
 
 ```lua:
-'tar80/fret.nvim'
+{
+  'tar80/fret.nvim',
+  opts = {
+    ...
+  },
+}
 ```
 
 ## Configration

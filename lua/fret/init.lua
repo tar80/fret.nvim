@@ -527,6 +527,10 @@ Fret.keymap = function(mapkey, key, direction, till)
   end, { expr = true, desc = string.format('fret-%s go %s search', key, direction) })
 end
 
+Fret.setup = function(opts)
+  return require('fret.config').setup(opts)
+end
+
 if _G.fret_debug then
   Fret._debug = function(key, direction, till, callback)
     keys = {}
