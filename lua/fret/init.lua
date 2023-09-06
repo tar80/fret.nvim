@@ -26,7 +26,7 @@ local function timer_start()
     return
   end
 
-  timer = vim.loop.new_timer()
+  timer = vim.uv.new_timer()
 
   timer:start(
     vim.g.fret_timeout,
@@ -81,12 +81,12 @@ local function control_hlsearch()
   local state = vim.o.hlsearch
 
   if state then
-    vim.api.nvim_command('nohlsearch')
+    vim.o.hlsearch = false
   end
 
   return function()
     if state then
-      vim.api.nvim_command('set hlsearch')
+      vim.o.hlsearch = true
     end
   end
 end
@@ -119,7 +119,7 @@ Score.attach_highlight = function(self, mode)
     )
   end
 
-  api.nvim_command('redraw')
+  vim.cmd.redraw()
 end
 
 local function convert_valid_key(char, list)
@@ -295,7 +295,9 @@ Score.repeatable = function(self, count)
     till = not self.reverse and 'l' or 'h'
   end
 
-  api.nvim_command(string.format('normal! %s%s%s%s', till, self.vcount, self.key, keys[count].actual))
+  local keystroke = string.format('%s%s%s%s', till, self.vcount, self.key, keys[count].actual)
+  vim.cmd.normal({keystroke, bang = true})
+  -- api.nvim_command(string.format('normal! %s%s%s%s', till, self.vcount, self.key, keys[count].actual))
 end
 
 Score.operable = function(self, count, mode)
@@ -311,7 +313,11 @@ Score.operable = function(self, count, mode)
   ---NOTE: nvim_strwidth() not support tabstop. And I didn't find nvim_api corresponding to strcharpart()
   local width = fn.strdisplaywidth(fn.strcharpart(self.line, 0, count + self.till))
 
-  api.nvim_command(string.format('normal! %s%s|', mode, width))
+  ---NOTE: Update as soon as I know how to get state of the inlay_hint
+  vim.lsp.inlay_hint(0, false)
+  local keystroke = string.format('%s%s|', mode, width)
+  vim.cmd.normal({keystroke, bang = true})
+  -- api.nvim_command(string.format('normal! %s%s|', mode, width))
 end
 
 Score.finish = function(self, mode, proc)
@@ -408,7 +414,7 @@ Score.related = function(self, input, lower, mode)
     return ''
   end
 
-  api.nvim_command('redraw')
+  vim.cmd.redraw()
   api.nvim_input(self.key)
 
   return 'related'
@@ -528,7 +534,7 @@ Fret.keymap = function(mapkey, key, direction, till)
 end
 
 Fret.setup = function(opts)
-  return require('fret.config').setup(opts)
+  require('fret.config').set_options(opts)
 end
 
 if _G.fret_debug then

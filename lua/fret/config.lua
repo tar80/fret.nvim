@@ -5,7 +5,7 @@ local Fret = require('fret')
 local M = {}
 
 ---@param opts table User configured options
-M.setup = function(opts)
+M.set_options = function(opts)
   local default_keys = {
     fret_f = { key = 'f', direction = 'forward', till = 0 },
     fret_F = { key = 'F', direction = 'backward', till = 0 },

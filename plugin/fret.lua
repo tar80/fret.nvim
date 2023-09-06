@@ -2,7 +2,7 @@ if vim.g.loaded_fret then
   return
 end
 
-local fret_au = vim.api.nvim_create_augroup('fret-nvim', { clear = true })
+local fret_augroup = vim.api.nvim_create_augroup('fret-nvim', { clear = true })
 local hl = {
   { name = 'FretConfirm', fg = 'LightGreen', bg = 'NONE', deco = 'underline' },
   { name = 'FretCandidate', fg = 'DarkCyan', bg = 'NONE', deco = 'NONE' },
@@ -17,7 +17,7 @@ vim.g._fret_highlights = { ['0'] = hl[4].name, ['1'] = hl[1].name, ['2'] = hl[2]
 
 local function set_hl()
   for _, v in ipairs(hl) do
-    vim.api.nvim_command(
+    vim.cmd(
       string.format(
         'highlight! default %s gui=%s guifg=%s guibg=%s cterm=%s ctermfg=%s ctermbg=%s',
         v.name,
@@ -33,7 +33,7 @@ local function set_hl()
 end
 
 vim.api.nvim_create_autocmd({ 'ColorScheme' }, {
-  group = fret_au,
+  group = fret_augroup,
   callback = function()
     set_hl()
   end,
