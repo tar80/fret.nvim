@@ -2,6 +2,10 @@ local tbl = require('fret.tbl')
 local api = vim.api
 local fn = vim.fn
 
+-- @class timer : userdata uv_timer_t
+-- @field start function
+-- @field stop function
+-- @field close function
 local timer
 local Fret = {}
 local Score = {}
@@ -73,31 +77,33 @@ Score.new = function(key, direction, till)
   self['front_count'] = 0
   self['front_byteidx'] = 0
   self['match_chars'] = {}
+  self['submatch_chars'] = {}
 
   return self
 end
 
 local function control_hlsearch()
-  local state = vim.o.hlsearch
+  local state = vim.v.hlsearch
 
-  if state then
+  if state == 1 then
     vim.o.hlsearch = false
   end
 
   return function()
-    if state then
+    if state == 1 then
       vim.o.hlsearch = true
     end
   end
 end
 
-local function define_highlight(char, level, mode)
-  local hl = { [0] = hlgroup['0'], [1] = hlgroup['1'], [2] = hlgroup['2'] }
+local function define_highlight(actual, level, mode)
+  local hl = { [0] = hlgroup['0'], [1] = hlgroup['1'], [2] = hlgroup['2'], [3] = hlgroup['3'] }
 
   ---when executing operator-command, or number/symbol is highlight only for the first candidate
   if level > 1 then
+    level = (level == 2 and session.submatch_chars[actual]) and 2 or 3
     level = is_operator(mode) and 0 or level
-    level = char:match('[%d%p]') and 0 or level
+    level = actual:match('[%d%p]') and 0 or level
   end
 
   return hl[level]
@@ -112,7 +118,7 @@ Score.attach_highlight = function(self, mode)
     api.nvim_buf_add_highlight(
       0,
       ns,
-      define_highlight(v.char, v.level, mode),
+      define_highlight(v.actual, v.level, mode),
       row - 1,
       self.front_byteidx + v.byteidx - v.bytes,
       self.front_byteidx + v.byteidx
@@ -212,7 +218,7 @@ Score.newkey = function(self, idx, vcount, chars)
         if keys[i].char == char then
           level = keys[i].level + 1
 
-          if level > 1 then
+          if level > 2 then
             break
           end
         end
@@ -227,6 +233,15 @@ Score.newkey = function(self, idx, vcount, chars)
     if altchar and not self.match_chars[altchar] then
       self.match_chars[altchar] = idx
     end
+  elseif level == 2 then
+    self.submatch_chars[actual] = idx
+
+    ---add a key with a list containing the same vowel to the target
+    if altchar and not self.submatch_chars[altchar] then
+      self.submatch_chars[altchar:upper()] = idx
+    end
+  elseif level == 3 then
+    self.submatch_chars[char] = nil
   end
 
   table.insert(keys, {
@@ -296,8 +311,8 @@ Score.repeatable = function(self, count)
   end
 
   local keystroke = string.format('%s%s%s%s', till, self.vcount, self.key, keys[count].actual)
-  vim.cmd.normal({keystroke, bang = true})
-  -- api.nvim_command(string.format('normal! %s%s%s%s', till, self.vcount, self.key, keys[count].actual))
+
+  vim.cmd.normal({ keystroke, bang = true })
 end
 
 Score.operable = function(self, count, mode)
@@ -316,8 +331,7 @@ Score.operable = function(self, count, mode)
   ---NOTE: Update as soon as I know how to get state of the inlay_hint
   vim.lsp.inlay_hint(0, false)
   local keystroke = string.format('%s%s|', mode, width)
-  vim.cmd.normal({keystroke, bang = true})
-  -- api.nvim_command(string.format('normal! %s%s|', mode, width))
+  vim.cmd.normal({ keystroke, bang = true })
 end
 
 Score.finish = function(self, mode, proc)
@@ -372,7 +386,7 @@ local function attach_extmark(input, lower, row)
   end
 
   for i = session.truncate, #keys do
-    if keys[i].level == 2 and target(keys[i].char, keys[i].altchar) then
+    if keys[i].level > 1 and target(keys[i].char, keys[i].altchar) then
       marker = marker_string(keys[i].charwidth, markers[id])
       byteidx = session.front_byteidx + keys[i].byteidx
       session.match_chars[markers[id]] = i
@@ -381,7 +395,7 @@ local function attach_extmark(input, lower, row)
         id = not _G.fret_debug and id or nil,
         end_row = row - 1,
         end_col = byteidx,
-        virt_text = { { marker, hlgroup['3'] } },
+        virt_text = { { marker, hlgroup['4'] } },
         virt_text_pos = 'overlay',
       })
 
@@ -422,6 +436,7 @@ end
 
 Score.gain = function(self, input, mode)
   local count = self.match_chars[input]
+  local subcount = self.submatch_chars[input]
 
   ---items whose move to that position with a type
   if input:match('[^%u]') and count then
@@ -429,6 +444,14 @@ Score.gain = function(self, input, mode)
       self:repeatable(count)
     else
       self:operable(count, mode)
+    end
+  elseif input:match('%u') and subcount then
+    session.vcount = session.vcount + (count and 1 or 0)
+
+    if not is_operator(mode) then
+      self:repeatable(subcount)
+    else
+      self:operable(subcount, mode)
     end
 
   ---items that require 2 or more types
