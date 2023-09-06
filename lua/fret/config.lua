@@ -1,8 +1,8 @@
 local Fret = require('fret')
 
 ---@class config
----@field setup function
-M = {}
+---@field set_options function
+local M = {}
 
 ---@param opts table User configured options
 M.setup = function(opts)

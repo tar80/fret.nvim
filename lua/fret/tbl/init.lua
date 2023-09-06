@@ -1,4 +1,4 @@
-M = {}
+local M = {}
 
 M.altchar = { c = 'k', k = 'c', f = 'h', h = 'f', j = 'z', z = 'j', l = 'x', x = 'l' }
 
