@@ -17,7 +17,7 @@ It provides alternate keys to jump to related character.
 
 ## Requirements
 
-- Neovim >= 0.9
+- Neovim >= 0.10
 
 ## Installation
 

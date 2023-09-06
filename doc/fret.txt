@@ -28,28 +28,33 @@ USAGE                                                             *fret-usage*
 Type in f (or F,t,T) to highlight the cursor line
 
 A. To move to a light-colored character, you need to type only once
-B. To move to a dark-colored character, you must type at least twice
-C. The darkest color character is out of scope
+B. To move to a dark underlined letter, press Shift and type the letter
+C. To move to a dark-colored character, you must type at least twice
+D. The darkest color character is out of scope
 
           Example of input for how to move to case A.(Normal behavior)
 
             step1: input "f"
             step2: input "<lowercase of the target alphabet>"
 
-          Example of input for how to move to case B.(Related-mode)
+          Example of input for how to move to case B.(Normal behavior)
 
             step1: input "f"
-            step2: input "shift + <lowercase of the target alphabet>"
-            step3: input "shift + <alternative letter>"
+            step2: input "<uppercase of the target alphabet>"
+
+          Example of input for how to move to case C.(Related-mode)
+
+            step1: input "f"
+            step2: input "<uppercase of the target alphabet>"
+            step3: input "<alternative letter>"
 
           • The alternative letter is set to the character corresponding to
-            the key pressed when step2 is executed. Also, if there is only one
-            target character, it is immediately moved
+            the key pressed when step2 is executed.
 
 Note
 • During the execution of the operator-command, only the characters in case A.
   will be highlighted
-• Case B. highlighting is for alphabets(and kana charactors)
+• Case C. highlighting is for alphabets(and kana charactors)
 
 ==============================================================================
 INTERFACE                                                     *fret-interface*
@@ -93,14 +98,14 @@ g:_fret_highlights                                        *g:_fret_highlights*
           "2": `Sub-target characters group`,
           "3": `Alternative characters group`
         ]
- 
+
 ------------------------------------------------------------------------------
 CONFIGURATION                                             *fret-configuration*
 
 *fret.nvim* does not provide <Plug> keys.
 It automatically registers keymaps from the |fret-mapkeys| values.
 
-Default settings~
+Default settings ~
 
 mapkeys                                                         *fret-mapkeys*
 
@@ -127,19 +132,23 @@ altkeys                                                         *fret-altkeys*
 ------------------------------------------------------------------------------
 HIGHLIGHT                                                     *fret-highlight*
 
-FretConfirm~
+*FretConfirm*
 
-        Used for characters that move the cursor to that position when entered
+        Used for characters that first hit
 
-FretCandidate~
+*FretConfirmSub*
+
+        Used for characters that second hit
+
+*FretCandidate*
 
         Used for characters that are candidates for related-mode
 
-FretIgnore~
+*FretIgnore*
 
         Used for characters not covered by *fret.nvim*
 
-FretAlternative~
+*FretAlternative*
 
         Used for alternative letters
 
