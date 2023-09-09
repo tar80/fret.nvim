@@ -96,14 +96,14 @@ local function control_hlsearch()
   end
 end
 
-local function define_highlight(actual, level, mode)
+local function define_highlight(char, level, mode)
   local hl = { [0] = hlgroup['0'], [1] = hlgroup['1'], [2] = hlgroup['2'], [3] = hlgroup['3'] }
 
   ---when executing operator-command, or number/symbol is highlight only for the first candidate
   if level > 1 then
-    level = (level == 2 and session.submatch_chars[actual]) and 2 or 3
+    level = (level == 2 and session.submatch_chars[char]) and 2 or 3
     level = is_operator(mode) and 0 or level
-    level = actual:match('[%d%p]') and 0 or level
+    level = char:match('[%d%p]') and 0 or level
   end
 
   return hl[level]
@@ -118,7 +118,7 @@ Score.attach_highlight = function(self, mode)
     api.nvim_buf_add_highlight(
       0,
       ns,
-      define_highlight(v.actual, v.level, mode),
+      define_highlight(v.char, v.level, mode),
       row - 1,
       self.front_byteidx + v.byteidx - v.bytes,
       self.front_byteidx + v.byteidx
@@ -234,11 +234,10 @@ Score.newkey = function(self, idx, vcount, chars)
       self.match_chars[altchar] = idx
     end
   elseif level == 2 then
-    self.submatch_chars[actual] = idx
+    self.submatch_chars[char] = idx
 
-    ---add a key with a list containing the same vowel to the target
     if altchar and not self.submatch_chars[altchar] then
-      self.submatch_chars[altchar:upper()] = idx
+      self.submatch_chars[altchar] = idx
     end
   elseif level == 3 then
     self.submatch_chars[char] = nil
