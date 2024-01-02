@@ -82,16 +82,26 @@ Score.new = function(key, direction, till)
   return self
 end
 
-local function control_hlsearch()
-  local state = vim.v.hlsearch
+local function control_conditions()
+  local has_highlights = vim.v.hlsearch == 1
+  --NOTE: tentative response to lsp.inlay_hint
+  local has_ih, has_hints = pcall(vim.lsp.inlay_hint.is_enabled, 0)
 
-  if state == 1 then
+  if has_highlights then
     vim.o.hlsearch = false
   end
 
+  if has_ih and has_hints then
+    vim.lsp.inlay_hint.enable(0, false)
+  end
+
   return function()
-    if state == 1 then
+    if has_highlights then
       vim.o.hlsearch = true
+    end
+
+    if has_ih and has_hints then
+      vim.lsp.inlay_hint.enable(0, true)
     end
   end
 end
@@ -233,7 +243,7 @@ Score.newkey = function(self, idx, vcount, chars)
     if altchar and not self.match_chars[altchar] then
       self.match_chars[altchar] = idx
     end
-  elseif level == 2 then
+  elseif (level == 2) and (char ~= ' ') then
     self.submatch_chars[char] = idx
 
     if altchar and not self.submatch_chars[altchar] then
@@ -327,8 +337,6 @@ Score.operable = function(self, count, mode)
   ---NOTE: nvim_strwidth() not support tabstop. And I didn't find nvim_api corresponding to strcharpart()
   local width = fn.strdisplaywidth(fn.strcharpart(self.line, 0, count + self.till))
 
-  ---NOTE: Update as soon as I know how to get state of the inlay_hint
-  vim.lsp.inlay_hint(0, false)
   local keystroke = string.format('%s%s|', mode, width)
   vim.cmd.normal({ keystroke, bang = true })
 end
@@ -534,7 +542,7 @@ end
 Fret.inst = function(key, direction, till)
   local mode = fn.mode(1)
   local ok, related = pcall(next, session.match_chars)
-  local hlsearch = control_hlsearch()
+  local hlsearch = control_conditions()
 
   if ok and related then
     performing(mode)
