@@ -46,16 +46,19 @@ local function is_operator(mode)
   return mode:find('^no')
 end
 
-local function column_limited()
+local function shift_position()
+  local screen_cur = fn.wincol()
+  local line_cur = fn.col('.')
+
+  return line_cur - screen_cur
+end
+
+local function line_range()
   local line = api.nvim_get_current_line()
   local col = api.nvim_win_get_width(0) - 1
 
   if not vim.wo.wrap and #line > col then
-    local f = tonumber(vim.wo.foldcolumn)
-    local s = vim.wo.signcolumn == 'yes' and 2 or 0
-    local n = (vim.wo.number or vim.wo.relativenumber) and tonumber(vim.wo.numberwidth) or 0
-
-    line = line:sub(1, col - f - s - n)
+    line = line:sub(1, col  + shift_position())
   end
 
   return line
@@ -71,7 +74,7 @@ Score.new = function(key, direction, till)
   self['timer'] = vim.g.fret_timeout
   self['vcount'] = vim.v.count1
   self['cursor'] = api.nvim_win_get_cursor(0)
-  self['line'] = column_limited()
+  self['line'] = line_range()
   self['indices'] = ''
   self['has_multibyte'] = false
   self['front_count'] = 0
