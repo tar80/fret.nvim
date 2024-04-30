@@ -27,8 +27,8 @@ USAGE                                                             *fret-usage*
 
 Type in f (or F,t,T) to highlight the cursor line
 
-A. To move to a light-colored character, you need to type only once
-B. To move to a dark underlined letter, press Shift and type the letter
+A. To move to a light-colored underline character, you need to type only once
+B. To move to a light-fg and dark-bg letter, press Shift and type the letter
 C. To move to a dark-colored character, you must type at least twice
 D. The darkest color character is out of scope
 
@@ -132,25 +132,25 @@ altkeys                                                         *fret-altkeys*
 ------------------------------------------------------------------------------
 HIGHLIGHT                                                     *fret-highlight*
 
-*FretConfirm*
+*FretCandidateFirst*
 
         Used for characters that first hit
 
-*FretConfirmSub*
+*FretCandidateSecond*
 
         Used for characters that second hit
 
-*FretCandidate*
+*FretCandidateSub*
 
         Used for characters that are candidates for related-mode
-
-*FretIgnore*
-
-        Used for characters not covered by *fret.nvim*
 
 *FretAlternative*
 
         Used for alternative letters
+
+*FretIgnore*
+
+        Used for characters not covered by *fret.nvim*
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:fen:fdl=0:fdm=marker:
