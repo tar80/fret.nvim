@@ -11,36 +11,53 @@ local hlgroup = {
   second = 'FretCandidateSecond',
   sub = 'FretCandidateSub',
   alt = 'FretAlternative',
+  hint = 'LspInlayHint',
 }
 local hl_detail = {
-  [hlgroup.ignore] = { fg = 'Gray', bg = 'NONE' },
-  [hlgroup.first] = { fg = 'LightGreen', bg = 'NONE', underline = true },
-  [hlgroup.second] = { fg = 'LightGreen', bg = 'DarkGreen' },
-  [hlgroup.sub] = { fg = 'DarkGreen', bg = 'NONE' },
-  [hlgroup.alt] = { fg = 'Black', bg = 'LightGreen' },
+  light = {
+    [hlgroup.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
+    [hlgroup.first] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
+    [hlgroup.second] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
+    [hlgroup.sub] = { default = true, fg = 'LightBlue', bg = 'NONE' },
+    [hlgroup.alt] = { default = true, fg = 'LightCyan', bg = 'DarkCyan' },
+  },
+  dark = {
+    [hlgroup.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
+    [hlgroup.first] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
+    [hlgroup.second] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
+    [hlgroup.sub] = { default = true, fg = 'DarkCyan', bg = 'NONE' },
+    [hlgroup.alt] = { default = true, fg = 'DarkGreen', bg = 'LightGreen' },
+  },
 }
 local augroup = vim.api.nvim_create_augroup(UNIQ_ID, { clear = true })
 
 vim.g.fret_enable_kana = false
 vim.g.fret_timeout = 0
-vim.g._fret_highlights =
-  { ['0'] = hlgroup.ignore, ['1'] = hlgroup.first, ['2'] = hlgroup.second, ['3'] = hlgroup.sub, ['4'] = hlgroup.alt }
+_G._fret_highlights = {
+  [0] = hlgroup.ignore,
+  [1] = hlgroup.first,
+  [2] = hlgroup.second,
+  [3] = hlgroup.sub,
+  [4] = hlgroup.alt,
+  [5] = hlgroup.hint,
+}
 
----@param init? boolean
-local function set_hl(init)
-  for k, v in pairs(hl_detail) do
-    if init then
-      v.default = true
-    end
-    vim.api.nvim_set_hl(0, k, v)
-  end
+local rgx = vim.regex('^dark\\|light$')
+local function set_hl()
+  local bg = vim.go.background
+  local hl = hl_detail[rgx:match_str(bg) and bg or 'dark']
+  local iter = vim.iter(hl)
+  iter:each(function(v)
+    vim.api.nvim_set_hl(0, v, hl[v])
+  end)
 end
 
-vim.api.nvim_create_autocmd({ 'ColorScheme' }, {
+require('fret.util').autocmd({ 'ColorScheme' }, {
+  desc = 'Reload fret hlgroups',
   group = augroup,
   callback = function()
     set_hl()
   end,
-})
+}, true)
 
-set_hl(true)
+set_hl()

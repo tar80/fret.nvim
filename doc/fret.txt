@@ -27,22 +27,21 @@ USAGE                                                             *fret-usage*
 
 Type in f (or F,t,T) to highlight the cursor line
 
-A. To move to a light-colored underline character, you need to type only once
-B. To move to a light-fg and dark-bg letter, press Shift and type the letter
-C. To move to a dark-colored character, you must type at least twice
-D. The darkest color character is out of scope
+A: To move to a underline character, you need to type only once
+B: To move to a dark-colored character, you must type at least twice
+C: The gray color character is out of scope
 
           Example of input for how to move to case A.(Normal behavior)
 
             step1: input "f"
+
+          If it's a lowercase letter
             step2: input "<lowercase of the target alphabet>"
 
-          Example of input for how to move to case B.(Normal behavior)
-
-            step1: input "f"
+          Or a uppercase letter
             step2: input "<uppercase of the target alphabet>"
 
-          Example of input for how to move to case C.(Related-mode)
+          Example of input for how to move to case B.(Related-mode)
 
             step1: input "f"
             step2: input "<uppercase of the target alphabet>"
@@ -52,9 +51,12 @@ D. The darkest color character is out of scope
             the key pressed when step2 is executed.
 
 Note
-• During the execution of the operator-command, only the characters in case A.
-  will be highlighted
-• Case C. highlighting is for alphabets(and kana charactors)
+• Operator commands can be executed even in related-mode, but repeat commands
+  may differ from actual keystrokes due to internal command optimization.
+  Even in such cases, you can display the contents of the repeat command
+  by configuring |fret_notify_repeat|
+
+• Case B. highlighting is for alphabets(and kana charactors)
 
 ==============================================================================
 INTERFACE                                                     *fret-interface*
@@ -67,10 +69,12 @@ setup({cfg})                                             *fret.config.setup()*
         Setup and activate fret
 
         Parameters: ~
-              {fret_timeout}      (integer):  |g:fret_timeout|
-              {fret_enable_kana}  (boolean):  |g:fret_enable_kana|
-              {mapkeys}           (table):    |fret-mapkeys|
-              {altkeys}           (table):    |fret-altkeys|
+              {fret_timeout}        (integer):  |g:fret_timeout|
+              {fret_enable_kana}    (boolean):  |g:fret_enable_kana|
+              {fret_notify_repeat}  (boolean):  |g:fret_notify_repeat|
+              {fret_hlmode}         (string):   |g:fret_hlmode|
+              {mapkeys}             (table):    |fret-mapkeys|
+              {altkeys}             (table):    |fret-altkeys|
 
 
 ------------------------------------------------------------------------------
@@ -88,16 +92,18 @@ g:fret_enable_kana                                        *g:fret_enable_kana*
 
         Type: `boolean`, Default: `false`
 
-g:_fret_highlights                                        *g:_fret_highlights*
+g:fret_repeat_notify                                    *g:fret_repeat_notify*
 
-        (Internally)Highlight groups used by fret.nvim
+        Display dot-repeat command with notification message
 
-        Type: `dictionary`, Default: [
-          "0": `Non-target characters group`,
-          "1": `Target charcters group`,
-          "2": `Sub-target characters group`,
-          "3": `Alternative characters group`
-        ]
+        Type: boolean, Default: false
+
+g:fret_hlmode
+
+        This is how to handle the background of highlighted characters
+        Value is the same as the option "hl_mode" of nvim_buf_set_extmark()
+
+        Type: string, Default: "replace"
 
 ------------------------------------------------------------------------------
 CONFIGURATION                                             *fret-configuration*

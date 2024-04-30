@@ -1,604 +1,501 @@
+---@module 'util'
+local util = require('fret.util')
+-- local util = package.loaded['matchwith.util'] or require('fret.util')
 local tbl = require('fret.tbl')
 local api = vim.api
 local fn = vim.fn
 
--- @class timer : userdata uv_timer_t
--- @field start function
--- @field stop function
--- @field close function
-local timer
+local UNIQ_ID = 'fret-nvim'
+local L_SHIFT = 'JKLUIOPNMHY'
+local R_SHIFT = 'FDSAREWQVCXZGTB'
+
+local ns = api.nvim_create_namespace(UNIQ_ID)
+local timer = util.set_timer()
+local hlgroup = _G._fret_highlights
+_G._fret_highlights = nil
+
+---@class Fret
 local Fret = {}
-local Score = {}
-local session, keys, stored = {}, {}, {}
-local hlgroup = vim.g._fret_highlights
-Fret.altkeys = { lshift = 'JKLUIOPNMHY', rshift = 'FDSAREWQVCXZGTB' }
+Fret.altkeys = { lshift = L_SHIFT, rshift = R_SHIFT }
+Fret.mapped_trigger = false
 
-local ns = api.nvim_create_namespace('fret-nvim')
+---@class Session
+local _session = {}
 
-local function timer_stop()
-  if not timer then
-    return
+-- Clean up the keys database
+local function _newkeys()
+  return { level = {}, ignore = {}, detail = {}, first_idx = {}, second_idx = {} }
+end
+
+---@type Session
+local Session = { keys = _newkeys() }
+
+-- Start new session
+function _session.new(mapkey, direction, till)
+  local self = {
+    ns = ns,
+    timer = timer,
+    hlgroup = hlgroup,
+    bufnr = api.nvim_get_current_buf(),
+    winid = api.nvim_get_current_win(),
+    hlmode = vim.g.fret_hlmode,
+    notify = vim.g.fret_repeat_notify,
+    enable_kana = vim.g.fret_enable_kana,
+    timeout = vim.g.fret_timeout,
+    vcount = vim.v.count1,
+    mapkey = mapkey,
+    reversive = direction == 'forward',
+    operative = util.is_operator(),
+    till = till,
+    front_count = 0,
+    front_byteidx = 0,
+    keys = _newkeys(),
+  }
+  local pos = api.nvim_win_get_cursor(self.winid)
+  self['cur_row'] = pos[1]
+  self['cur_col'] = pos[2]
+  return setmetatable(self, { __index = _session })
+end
+
+-- Abort operation
+---@operative boolean
+local function _abort(operative)
+  if operative then
+    api.nvim_input('<Cmd>normal! u<CR>')
   end
-
-  timer:stop()
-  timer:close()
-  timer = nil
 end
 
-local function timer_start()
-  if session.timer == 0 then
-    return
-  end
-
-  timer = vim.uv.new_timer()
-
-  timer:start(
-    vim.g.fret_timeout,
-    0,
-    vim.schedule_wrap(function()
-      timer_stop()
-      return api.nvim_input('<Esc>')
-    end)
-  )
-end
-
-local function is_operator(mode)
-  return mode:find('^no')
-end
-
-local function shift_position()
-  local screen_cur = fn.wincol()
-  local line_cur = fn.col('.')
-
-  return line_cur - screen_cur
-end
-
-local function line_range()
+-- Get and update line information
+function _session.set_line_informations(self)
   local line = api.nvim_get_current_line()
-  local col = api.nvim_win_get_width(0) - 1
-
-  if not vim.wo.wrap and #line > col then
-    line = line:sub(1, col  + shift_position())
+  if line == '' then
+    return
   end
-
-  return line
+  local wincol = util.zerobase(fn.wincol())
+  local winsaveview = fn.winsaveview()
+  local leftcol = winsaveview.leftcol
+  local info_width = wincol - (winsaveview.col - winsaveview.leftcol)
+  local win_width = api.nvim_win_get_width(self.winid)
+  if leftcol > 0 then
+    line = line:sub(leftcol + 1, win_width + leftcol - info_width)
+    -- NOTE: whether matchchars should be supported
+    -- if api.nvim_get_option_value('list', {}) then
+    --   local extends, precedes = util.expand_wrap_symbols()
+    -- end
+  end
+  ---@type string
+  local indices
+  -- NOTE: consider that cur_col is zero-based
+  if self.reversive then
+    indices = line:sub(1, self.cur_col - leftcol)
+  else
+    self['front_count'] = vim.str_utfindex(line, self.cur_col + 1)
+    self['front_byteidx'] = vim.str_byteindex(line, self.front_count) --[[@as integer]]
+    indices = line:sub(self.front_byteidx - leftcol + 1)
+  end
+  if indices == '' then
+    return
+  end
+  self['leftcol'] = leftcol
+  self['info_width'] = info_width
+  return indices
 end
 
-Score.new = function(key, direction, till)
-  local self = setmetatable({}, { __index = Score })
-  self['key'] = key
-  self['reverse'] = direction == 'backward'
-  self['till'] = not self.reverse and -till or till
-  self['truncate'] = not self.reverse and (2 + till) or (1 + till)
-  self['kana'] = vim.g.fret_enable_kana
-  self['timer'] = vim.g.fret_timeout
-  self['vcount'] = vim.v.count1
-  self['cursor'] = api.nvim_win_get_cursor(0)
-  self['line'] = line_range()
-  self['indices'] = ''
-  self['has_multibyte'] = false
-  self['front_count'] = 0
-  self['front_byteidx'] = 0
-  self['match_chars'] = {}
-  self['submatch_chars'] = {}
-
-  return self
-end
-
-local function control_conditions()
-  local has_highlights = vim.v.hlsearch == 1
-  --NOTE: tentative response to lsp.inlay_hint
-  local has_ih, has_hints = pcall(vim.lsp.inlay_hint.is_enabled, 0)
-
-  if has_highlights then
-    vim.o.hlsearch = false
-  end
-
-  if has_ih and has_hints then
-    vim.lsp.inlay_hint.enable(0, false)
-  end
-
-  return function()
-    if has_highlights then
-      vim.o.hlsearch = true
-    end
-
-    if has_ih and has_hints then
-      vim.lsp.inlay_hint.enable(0, true)
-    end
-  end
-end
-
-local function define_highlight(char, level, mode)
-  local hl = { [0] = hlgroup['0'], [1] = hlgroup['1'], [2] = hlgroup['2'], [3] = hlgroup['3'] }
-
-  ---when executing operator-command, or number/symbol is highlight only for the first candidate
-  if level > 1 then
-    level = (level == 2 and session.submatch_chars[char]) and 2 or 3
-    level = is_operator(mode) and 0 or level
-    level = char:match('[%d%p]') and 0 or level
-  end
-
-  return hl[level]
-end
-
----NOTE: nvim_buf_add_highlight() has a problem, and the bold display shifts the character width
---- but mathaddpos() is not suitable because there are 8 upper limit
-Score.attach_highlight = function(self, mode)
-  local row = self.cursor[1]
-
-  for _, v in ipairs(keys) do
-    api.nvim_buf_add_highlight(
-      0,
-      ns,
-      define_highlight(v.char, v.level, mode),
-      row - 1,
-      self.front_byteidx + v.byteidx - v.bytes,
-      self.front_byteidx + v.byteidx
-    )
-  end
-
-  vim.cmd.redraw()
-end
-
-local function convert_valid_key(char, list)
-  for k, v in pairs(tbl[list]) do
+-- Convert a character to a valid key
+---@param char string
+---@param name string Table name in string array
+---@return string?
+local function _valid_key(char, name)
+  for k, v in pairs(tbl[name]) do
     if v:find(char, 1, true) then
       return k
     end
   end
 end
 
-Score.matcher = function(self, actual)
-  local match, kanamoji, char, altchar, charwidth
-  local patterns = { gen = '[%w%p%s]', kana = '[^%g%s]' }
-
+-- Extract matched characters
+---@param actual string
+---@param enable_kana boolean
+---@return string?,string,string?,string?,boolean?
+local function _matcher(actual, enable_kana)
+  local match, char, altchar, double
   if actual:match('%C') then
-    match = actual:match(patterns['gen'])
-
+    match = actual:match('[%w%p%s]')
     if match then
       char = actual:lower()
-    elseif self.has_multibyte and self.kana then
-      kanamoji = actual:match(patterns['kana'])
-      match = kanamoji
-
+    elseif enable_kana then
+      match = actual:match('[^%g%s]')
       if match then
-        ---NOTE: <%s> is for debug
-        char = convert_valid_key(actual, 'kana') or string.format('<%s>', actual)
-        charwidth = not tbl.hankanalist:find(actual, 1, true) and 'double'
-        altchar = tbl.altchar[char]
+        char = _valid_key(actual, 'kana')
+        if char then
+          double = not tbl.hankanalist:find(actual, 1, true)
+          altchar = tbl.altchar[char]
+        else
+          match = false
+        end
       end
     end
   end
-
-  return match, char, actual, altchar, charwidth
+  return match, actual, char, altchar, double
 end
 
-Score.sort = function(self, chars)
-  local t = {}
-
-  if not self.has_multibyte then
-    local chars_t = vim.split(chars, '', { plain = true })
-
-    for i, v in ipairs(chars_t) do
-      table.insert(t, (not self.reverse and #t + 1 or 1), { v, i, 1 })
+-- Store key information in database
+function _session.store_key(self, char, idx, byteidx, bytes, kana)
+  local match, actual, altchar, double
+  local level = 0
+  if idx > self.till then
+    local vcount = self.keys.ignore[char]
+    if vcount ~= 0 then
+      vcount = vcount and (vcount - 1) or (self.vcount - 1)
+      self.keys.ignore[char] = vcount
+    end
+    match, actual, char, altchar, double = _matcher(char, kana)
+    if match and (vcount < 1) then
+      ---@cast char -?
+      level = self.keys.level[char] and (self.keys.level[char] + 1) or 1
+      self.keys.level[char] = math.min(2, level)
     end
   else
-    local c, idx, byteidx, bytes
-    local i, j = 1, 0
-    local chars_len = #chars
-
-    ---@see https://zenn.dev/vim_jp/articles/get-charpos-in-neovim
-    while i <= chars_len do
-      idx = vim.str_utfindex(chars, i)
-
-      if idx ~= j then
-        j = idx
-        c = fn.strcharpart(chars, idx - 1, 1)
-        byteidx = vim.str_byteindex(chars, idx)
-        bytes = #c
-
-        ---NOTE: Replace non-target multibyte characters with control characters
-        ---  Does not have to be "^A"
-        if bytes ~= 1 then
-          if not (self.kana and tbl.kanalist:find(c, 1, true)) then
-            c = ''
-          end
-        end
-
-        table.insert(t, (not self.reverse and (#t + 1) or 1), { c, byteidx, bytes })
-      end
-
-      i = i + 1
-    end
+    actual = char
   end
-
-  return t
-end
-
-Score.newkey = function(self, idx, vcount, chars)
-  local level = 0
-  local char, byteidx, bytes = unpack(chars[idx])
-  local match, actual, altchar, charwidth
-
-  if idx >= self.truncate then
-    match, char, actual, altchar, charwidth = self:matcher(char)
-
-    if match and (vcount < 1) then
-      level = 1
-
-      for i = 1, #keys do
-        if keys[i].char == char then
-          level = keys[i].level + 1
-
-          if level > 2 then
-            break
-          end
-        end
-      end
+  if not char then
+    level = 0
+  elseif level == 1 then
+    self.keys.first_idx[char] = idx
+    -- Add a key with a list containing the same vowel to the target
+    if altchar and not self.keys.first_idx[altchar] then
+      self.keys.first_idx[altchar] = idx
     end
-  end
-
-  if level == 1 then
-    self.match_chars[char] = idx
-
-    ---add a key with a list containing the same vowel to the target
-    if altchar and not self.match_chars[altchar] then
-      self.match_chars[altchar] = idx
-    end
-  elseif (level == 2) and (char ~= ' ') then
-    self.submatch_chars[char] = idx
-
-    if altchar and not self.submatch_chars[altchar] then
-      self.submatch_chars[altchar] = idx
+  elseif char:match('[%d%p%s]') then
+    level = 0
+  elseif level == 2 then
+    self.keys.second_idx[char] = idx
+    if altchar and not self.keys.second_idx[altchar] then
+      self.keys.second_idx[altchar] = idx
     end
   elseif level == 3 then
-    self.submatch_chars[char] = nil
+    local second = self.keys.second_idx[char]
+    if second then
+      self.keys.detail[second].level = 3
+      self.keys.second_idx[char] = nil
+      if altchar then
+        self.keys.second_idx[altchar] = nil
+      end
+    end
   end
-
-  table.insert(keys, {
-    char = char,
+  table.insert(self.keys.detail, {
     actual = actual,
+    char = char,
     altchar = altchar,
     level = level,
-    charwidth = charwidth,
+    double = double,
     byteidx = byteidx,
     bytes = bytes,
   })
 end
 
----NOTE: Do not include characters adjacent to the cursor position for highlighting when using t/T key
-local adjust_vcount = function(self)
-  local int = 0
-
-  if self.till ~= 0 then
-    int = not self.reverse and 2 or 1
+-- Add blank space for an inlay hint
+---@param backward string
+---@return string, string
+local function _hint(backward)
+  local forward = ' '
+  if backward:find(':') ~= 1 then
+    forward, backward = backward, forward
   end
-
-  return function(i, n)
-    return n and (n - 1) or (self.vcount - (i == int and 0 or 1))
-  end
+  return forward, backward
 end
 
-Score.setkeys = function(self, indices)
-  local t = self:sort(indices)
-  local c, s = '', ''
-  local n = 0
-  local ignore = {}
-  local vcount = adjust_vcount(self)
-
-  for i = 1, #t do
-    c = t[i][1]
-    s = string.format('%s%s', s, c)
-    n = ignore[c]
-
-    if n ~= 0 then
-      ignore[c] = vcount(i, n)
-    end
-
-    self:newkey(i, ignore[c], t)
+function _session.get_inlay_hints(self, width)
+  local inlay_hint = vim.lsp.inlay_hint
+  if not inlay_hint then
+    return {}
   end
-
-  self.indices = s
+  local line = util.zerobase(self.cur_row)
+  local start, end_ = self.front_byteidx, self.front_byteidx + width
+  local iter = vim.iter(inlay_hint.get({
+    bufnr = self.bufnr,
+    range = { start = { character = start, line = line }, ['end'] = { character = end_, line = line } },
+  }))
+  if self.reversive then
+    iter:rev()
+  end
+  local hints = {}
+  iter:each(function(v)
+    local byteidx = v.inlay_hint.position.character - self.front_byteidx + 1
+    local actual = v.inlay_hint.label[1].value
+    actual = string.format('%s%s', _hint(actual))
+    hints[byteidx] = { actual = actual, level = 5, bytes = #actual }
+  end)
+  return hints
 end
 
-Score.get_indices = function(self, col)
-  local range = not self.reverse and { col + 1 } or { 1, col }
-  local chars = self.line:sub(unpack(range)) or ''
-
-  if chars ~= '' then
-    self.has_multibyte = #chars ~= api.nvim_strwidth(chars)
-    self.front_count = not self.reverse and vim.str_utfindex(self.line, col) or 0
-    self.front_byteidx = not self.reverse and vim.str_byteindex(self.line, self.front_count) or 0
+-- Obtaining and setting key information
+function _session.get_keys(self, indices)
+  local new_indices = ''
+  local char, bytes
+  local pos = vim.str_utf_pos(indices)
+  if self.reversive then
+    table.sort(pos, function(x, y)
+      return x > y
+    end)
   end
-
-  return chars
+  local iter = vim.iter(ipairs(pos))
+  iter:each(function(idx, byteidx)
+    char = indices:sub(byteidx, byteidx + vim.str_utf_end(indices, byteidx))
+    bytes = #char
+    self:store_key(char, idx, byteidx, bytes, self.enable_kana)
+    new_indices = string.format('%s%s', new_indices, char)
+  end)
+  return new_indices
 end
 
-Score.repeatable = function(self, count)
-  local till = ''
-
-  if self.till ~= 0 then
-    till = not self.reverse and 'l' or 'h'
-  end
-
-  local keystroke = string.format('%s%s%s%s', till, self.vcount, self.key, keys[count].actual)
-
-  vim.cmd.normal({ keystroke, bang = true })
-end
-
-Score.operable = function(self, count, mode)
-  if not self.reverse then
-    count = self.front_count + count
-    mode = is_operator(mode) and 'v' or ''
-  else
-    ---NOTE: Keep in mind that for backward, the text will play in reverse order
-    count = #keys - count + 1
-    mode = is_operator(mode) and 'hv' or ''
-  end
-
-  ---NOTE: nvim_strwidth() not support tabstop. And I didn't find nvim_api corresponding to strcharpart()
-  local width = fn.strdisplaywidth(fn.strcharpart(self.line, 0, count + self.till))
-
-  local keystroke = string.format('%s%s|', mode, width)
-  vim.cmd.normal({ keystroke, bang = true })
-end
-
-Score.finish = function(self, mode, proc)
-  timer_stop()
-
-  if proc == 'related' then
-    return
-  end
-
-  if is_operator(mode) then
-    if proc == 'abort' then
-      api.nvim_input('<Cmd>normal! u<CR>')
-    else
-      self.kana = false
-      self.timer = 0
-      self.cursor = {}
-      self.line = ''
-      self.indices = ''
-      self.match_chars = {}
-      stored = vim.deepcopy(session)
-    end
-  end
-
-  keys = {}
-  session = {}
-end
-
-local function map_marker(char)
-  local markers = Fret.altkeys.lshift:find(char, 1, true) and Fret.altkeys.lshift or Fret.altkeys.rshift
-  local num = markers:find(char, 1, true)
-  local t = vim.split(markers, '', { plain = true })
-
-  if num then
-    table.remove(t, num)
-  end
-
-  table.insert(t, 1, char)
-
-  return t
-end
-
-local function marker_string(charwidth, marker)
-  return charwidth == 'double' and string.format('%s ', marker) or marker
-end
-
-local function attach_extmark(input, lower, row)
-  local byteidx, id = 0, 1
-  local markers = map_marker(input)
-  local marker
-  local target = function(w, a)
-    return string.format('%s%s', w, a or ''):find(lower, 1, true)
-  end
-
-  for i = session.truncate, #keys do
-    if keys[i].level > 1 and target(keys[i].char, keys[i].altchar) then
-      marker = marker_string(keys[i].charwidth, markers[id])
-      byteidx = session.front_byteidx + keys[i].byteidx
-      session.match_chars[markers[id]] = i
-
-      api.nvim_buf_set_extmark(0, ns, row - 1, byteidx - keys[i].bytes, {
-        id = not _G.fret_debug and id or nil,
-        end_row = row - 1,
-        end_col = byteidx,
-        virt_text = { { marker, hlgroup['4'] } },
-        virt_text_pos = 'overlay',
-      })
-
-      id = id + 1
-
-      if not markers[id] then
-        break
-      end
-    end
-  end
-end
-
-Score.related = function(self, input, lower, mode)
-  local row, _ = unpack(self.cursor)
-  session.match_chars = {}
-
-  api.nvim_buf_add_highlight(0, ns, hlgroup['0'], row - 1, self.front_byteidx, -1)
-  attach_extmark(input, lower, row)
-
-  if vim.tbl_isempty(self.match_chars) then
-    api.nvim_buf_clear_namespace(0, ns, row - 1, row)
-
-    return ''
-  end
-
-  if vim.tbl_count(self.match_chars) == 1 then
-    api.nvim_buf_clear_namespace(0, ns, row - 1, row)
-    self:operable(self.match_chars[input], mode)
-
-    return ''
-  end
-
-  vim.cmd.redraw()
-  api.nvim_input(self.key)
-
-  return 'related'
-end
-
-Score.gain = function(self, input, mode)
-  local count = self.match_chars[input]
-  local subcount = self.submatch_chars[input]
-
-  ---items whose move to that position with a type
-  if input:match('[^%u]') and count then
-    if not is_operator(mode) then
-      self:repeatable(count)
-    else
-      self:operable(count, mode)
-    end
-  elseif input:match('%u') and subcount then
-    session.vcount = session.vcount + (count and 1 or 0)
-
-    if not is_operator(mode) then
-      self:repeatable(subcount)
-    else
-      self:operable(subcount, mode)
-    end
-
-  ---items that require 2 or more types
-  elseif not is_operator(mode) and input:match('%u') then
-    local lower = input:lower()
-
-    if not count or self.indices:find(lower, count + 1, true) then
-      return self:related(input, lower, mode)
-    end
-  else
-    return 'abort'
-  end
-end
-
-Score.key_in = function(row)
-  timer_start()
-
+-- Process for key input
+function _session.key_in(self)
+  self.timer.debounce(vim.g.fret_timeout, function()
+    api.nvim_input('<Esc>')
+  end)
   local input = fn.nr2char(fn.getchar())
-
-  api.nvim_buf_clear_namespace(0, ns, row - 1, row)
-
+  api.nvim_buf_clear_namespace(self.bufnr, self.ns, self.cur_row - 1, self.cur_row)
   if input:match('%C') then
     return input
   end
 end
 
-local function playing(key, direction, till, mode)
-  session = Score.new(key, direction, till)
-  local row, col = unpack(session.cursor)
-  local indices = session:get_indices(col)
+-- Repeatable key handling
+function _session.repeatable(self, count)
+  local till = ''
+  if self.till ~= 0 then
+    till = not self.reversive and 'l' or 'h'
+  end
+  local keystroke = string.format('%s%s%s%s', till, self.vcount, self.mapkey, self.keys.detail[count].actual)
+  vim.cmd.normal({ keystroke, bang = true })
+end
 
-  session:setkeys(indices)
+-- Operable key handring
+function _session.operable(self, count)
+  local char = self.keys.detail[count].actual
+  local line = self.line
+  local vcount = fn.count(fn.strcharpart(line, 0, count), char)
+  local select = ''
+  if self.operative then
+    select = self.reversive and 'hv' or 'v'
+  end
+  local keystroke = string.format('%s%s%s%s', select, vcount, self.mapkey, char)
+  vim.cmd.normal({ keystroke, bang = true })
+  if self.notify and self.operative then
+    local msg = string.format('%s: %s', 'dotrepeat', keystroke)
+    util.notify(UNIQ_ID, msg, vim.log.levels.INFO, { title = UNIQ_ID })
+  end
+  return keystroke
+end
 
-  if vim.str_utfindex(session.indices, #session.indices) < session.truncate then
+-- Finish of key operation
+function _session.finish(self)
+  self.timer.stop()
+  Session = { dotrepeat = self.dotrepeat, keys = _newkeys() }
+end
+
+-- Adjust marker letter width
+---@param double boolean
+---@param marker string A uppercase letter
+---@return string alt_letter
+local function _adjust_marker_width(double, marker)
+  return double and string.format(' %s', marker) or marker
+end
+
+-- Map marks for related-mode
+---@param char? string
+---@return Iter?
+local function _iter_marks(char)
+  if not char then
     return
   end
-
-  session:attach_highlight(mode)
-
-  local input = Score.key_in(row)
-  local proc = 'abort'
-
-  if input then
-    session['input'] = input
-    proc = session:gain(input, mode)
+  local main, sub = Fret.altkeys.lshift, Fret.altkeys.rshift
+  if not main:find(char, 1, true) then
+    main, sub = sub, main
   end
-
-  Score:finish(mode, proc)
+  local s = string.format('%s%s', main, sub)
+  local int = s:find(char, 1, true)
+  local t = vim.split(s, '', { plain = true })
+  if int then
+    table.remove(t, int)
+  end
+  table.insert(t, 1, char)
+  return vim.iter(ipairs(t))
 end
 
-local function performing(mode)
-  local row, _ = unpack(session.cursor)
-  local input = Score.key_in(row)
-
-  if input then
-    local count = session.match_chars[input]
-
-    if count then
-      session:operable(count, mode)
-    elseif input:match('[^%u]') then
-      api.nvim_input(input:match('[aiAI]') and '<Esc>' or input)
+-- Create and get line markers
+function _session.get_markers(self, callback)
+  local count = 1
+  local markers = {}
+  local forward = function(v)
+    local hint = self.hints[v.byteidx]
+    table.insert(markers, 1, { callback(v, count), self.hlgroup[v.level] })
+    if hint then
+      table.insert(markers, 1, { hint.actual, self.hlgroup[hint.level] })
     end
+    count = count + 1
   end
-
-  Score:finish(mode)
+  local backward = function(v)
+    local hint = self.hints[v.byteidx]
+    if hint then
+      table.insert(markers, { hint.actual, self.hlgroup[hint.level] })
+    end
+    table.insert(markers, { callback(v, count), self.hlgroup[v.level] })
+    count = count + 1
+  end
+  local iter = vim.iter(self.keys.detail)
+  iter:each(self.reversive and forward or backward)
+  return markers
 end
 
-local function dotrepeat(mode)
-  session = stored
-  session['cursor'] = api.nvim_win_get_cursor(0)
-  session['line'] = api.nvim_get_current_line()
-
-  local _, col = unpack(session.cursor)
-  local indices = session:get_indices(col)
-
-  session:setkeys(indices)
-  session:gain(session.input, mode)
-  Score:finish(mode)
+-- Create a table of extmarks
+function _session.create_line_marker(self, width, input, lower)
+  self['hints'] = self.hints or self:get_inlay_hints(width)
+  local markers
+  local iter_marks = _iter_marks(input)
+  local normal = function(v)
+    local mark
+    if v.level == 0 then
+      mark = v.actual
+    elseif v.level == 1 then
+      mark = _adjust_marker_width(v.double, v.char)
+    elseif v.level == 2 then
+      mark = _adjust_marker_width(v.double, v.char:upper())
+    else
+      mark = v.actual:upper()
+    end
+    return mark
+  end
+  ---@cast iter_marks -?
+  local related = function(v, count)
+    local mark
+    if (v.level > 1) and (v.char == lower or v.altchar == lower) then
+      local _, key = iter_marks:next()
+      if key then
+        mark = _adjust_marker_width(v.double, key)
+        v.level = 4
+        self.keys.first_idx[key] = count
+      end
+    else
+      mark = v.actual
+      v.level = 0
+    end
+    return mark
+  end
+  markers = self:get_markers(not input and normal or related)
+  return markers
 end
 
-Fret.inst = function(key, direction, till)
-  local mode = fn.mode(1)
-  local ok, related = pcall(next, session.match_chars)
-  local hlsearch = control_conditions()
+-- Attach extmarks on current line
+function _session.attach_extmark(self, input, lower)
+  local col = self.front_byteidx
+  local width = api.nvim_strwidth(self.line)
+  local markers = self:create_line_marker(width, input, lower)
+  if not input or (vim.tbl_count(self.keys.first_idx) > 1) then
+    api.nvim_buf_set_extmark(self.bufnr, self.ns, util.zerobase(self.cur_row), col, {
+      end_col = width,
+      virt_text = markers,
+      virt_text_pos = 'overlay',
+      hl_mode = self.hlmode,
+    })
+    vim.cmd.redraw()
+  end
+end
 
-  if ok and related then
-    performing(mode)
-  elseif session.mapped_trigger then
-    playing(key, direction, till, mode)
+function _session.related(self, input, lower)
+  self.keys.first_idx = {}
+  self:attach_extmark(input, lower)
+  local match_item = vim.tbl_count(self.keys.first_idx)
+  if match_item == 0 then
+    api.nvim_input('<Esc>')
+  elseif match_item == 1 then
+    self:operable(self.keys.first_idx[input])
   else
-    dotrepeat(mode)
+    vim.cmd(string.format('lua require("fret"):performing()'))
   end
-
-  hlsearch()
 end
 
-Fret.keymap = function(mapkey, key, direction, till)
-  vim.keymap.set({ 'n', 'x', 'o' }, mapkey, function()
-    session.mapped_trigger = true
-
-    return string.format('<Cmd>lua require("fret").inst("%s", "%s", %s)<CR>', key, direction, till)
-  end, { expr = true, desc = string.format('fret-%s go %s search', key, direction) })
+-- Move the cursor to the desired position
+function _session.gain(self, input)
+  local lower = input:lower()
+  local count = self.keys.first_idx[lower]
+  local subcount = self.keys.second_idx[lower]
+  local is_lower = input:match('%U')
+  local is_upper = not is_lower and input:match('%u')
+  -- Item that immediately moves the cursor to the key obtained by input
+  if count and is_lower then
+    if not self.operative then
+      self:repeatable(count)
+    else
+      self['dotrepeat'] = self:operable(count)
+    end
+  elseif is_upper then
+    if subcount then
+      self['dotrepeat'] = self:operable(subcount)
+    else
+      -- Items that require two or more inputs to move the cursor
+      self:related(input, lower)
+    end
+  else
+    _abort(self.operative)
+  end
 end
 
-Fret.setup = function(opts)
-  require('fret.config').set_options(opts)
+-- Executing fret
+function Fret.inst(self, mapkey, direction, till)
+  if self.mapped_trigger then
+    self.mapped_trigger = nil
+    self.playing(mapkey, direction, till)
+  else
+    self.dotrepeat()
+  end
 end
 
-if _G.fret_debug then
-  Fret._debug = function(key, direction, till, callback)
-    keys = {}
-    session = Score.new(key, direction, till)
-    local chars = session:get_indices(session.cursor[2])
-    session:setkeys(chars)
-    return callback(session)
+-- Start operation
+function Fret.playing(mapkey, direction, till)
+  Session = _session.new(mapkey, direction, till)
+  local indices = Session:set_line_informations()
+  if not indices or (vim.str_utfindex(indices, #indices) <= Session.till) then
+    return
   end
+  Session['line'] = Session:get_keys(indices)
+  Session:attach_extmark()
+  local input = Session:key_in()
+  if input then
+    Session:gain(input)
+  else
+    _abort(Session.operative)
+  end
+  Session:finish()
+end
 
-  Fret._clear_namespace = function()
-    api.nvim_buf_clear_namespace(0, ns, 0, -1)
+-- Handling related-mode
+function Fret.performing()
+  local input = Session:key_in()
+  if input then
+    local count = Session.keys.first_idx[input]
+    if count and input:match('%u') then
+      Session['dotrepeat'] = Session:operable(count)
+      return
+    end
+    input = input:match('[aiAI]') and '<Esc>' or input
+    api.nvim_input(input)
   end
+  _abort(Session.operative)
+end
 
-  Fret._clear_data = function()
-    keys = {}
-    session = {}
-  end
+-- Handling dot-repeat
+function Fret.dotrepeat()
+  vim.cmd.normal({ Session.dotrepeat, bang = true })
+end
 
-  Fret._read_data = function()
-    return { session = session, keys = keys }
+function Fret.setup(opts)
+  local ok = require('fret.config').set_options(opts)
+  if not ok then
+    util.notify(UNIQ_ID, 'Error: Requires arguments', vim.log.levels.ERROR, { title = UNIQ_ID })
   end
-
-  Fret._get_markers = function(char)
-    return table.concat(map_marker(char), '')
-  end
-
-  Fret._attach_extmark = function(input)
-    attach_extmark(input, input:lower(), session.cursor[1])
-  end
+  return ok
 end
 
 return Fret

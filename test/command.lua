@@ -1,5 +1,4 @@
-local ns = {}
-setmetatable(ns, {
+local ns = setmetatable({}, {
   __index = {
     namespace = vim.api.nvim_create_namespace('test'),
     clear = function(self)
@@ -9,7 +8,18 @@ setmetatable(ns, {
       row = tonumber(row)
       open = tonumber(open)
       close = tonumber(close)
-      vim.api.nvim_buf_add_highlight(0, self.namespace, 'Error', row - 1, open, close)
+      vim.api.nvim_buf_add_highlight(0, self.namespace, 'Error', row - 1, open - 0, close - 0)
+    end,
+    add_extmark = function(self, row, col)
+      local cur_row, cur_col = unpack(vim.api.nvim_win_get_cursor(0))
+      row = row and tonumber(row) or cur_row
+      col = col and tonumber(col) or cur_col
+      vim.api.nvim_buf_set_extmark(0, self.namespace, row - 1, col, {
+        end_col = col + 2,
+        virt_text = { { '1', 'Error' }, { '2', 'Search' } },
+        virt_text_pos = 'overlay',
+        hl_mode = 'combine',
+      })
     end,
   },
 })
@@ -38,3 +48,7 @@ vim.api.nvim_create_user_command('TestCharpart', function(opts)
   local chars = vim.fn.strcharpart(line, 0, opts.args)
   print(chars)
 end, { nargs = 1 })
+vim.api.nvim_create_user_command('TestExtmark', function(opts)
+  ns:add_extmark(opts.fargs[1],opts.fargs[2])
+end, { nargs = '+'})
+ns:clear()

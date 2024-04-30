@@ -9,7 +9,7 @@ It provides alternate keys to jump to related character.
 ## Features
 
 - [x] Related-mode is implemented
-- [x] Repeat-keys (`;` `,` `.`) are valid. Excludes Related-mode
+- [x] Repeat-keys (`;` `,` `.`) are valid
 - [x] Always ignores uppercase and lowercase letters
 - [x] Supports Kana-moji
 
@@ -17,7 +17,7 @@ It provides alternate keys to jump to related character.
 
 ## Requirements
 
-- Neovim >= 0.10
+- Neovim >= 0.10.0-dev-2999
 
 ## Installation
 
@@ -32,14 +32,16 @@ It provides alternate keys to jump to related character.
 }
 ```
 
-## Configration
+## Configuration
 
-- `mapkeys` field must be set to activate fret.nvim. Other fields are not required
+- `mapkeys` field must be set to activate fret.nvim. Other fields are optional
 
 ```lua:
 require('fret.config').setup({
   fret_timeout = 0,
   fret_enable_kana = false,
+  fret_repeat_notify = false,
+  fret_hlmode = 'replace',
   mapkeys = {
     fret_f = 'f',
     fret_F = 'F',
@@ -52,10 +54,13 @@ require('fret.config').setup({
   },
 })
 ```
+## Known issues
+
+- Hint may appear twice when starting fret from cursor position just before inlay_hint
 
 ## Credits
 
-fret.nvim was developed inspired by vim-eft and fuzzy-motion.vim.  
+fret.nvim is inspired by vim-eft and fuzzy-motion.vim.  
 Check out these nice plugins.
 
 - [hrsh7th/vim-eft](https://github.com/hrsh7th/vim-eft)
