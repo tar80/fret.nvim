@@ -9,6 +9,7 @@
 ---@class Options
 ---@field fret_timeout integer
 ---@field fret_enable_kana boolean
+---@field fret_enable_symbol boolean
 ---@field fret_repeat_notify boolean
 ---@field fret_hlmode string
 ---@field altkeys table<AltKeys,string>
@@ -23,6 +24,7 @@
 ---@field hlmode string
 ---@field notify boolean
 ---@field enable_kana boolean
+---@field enable_symbol boolean
 ---@field timeout integer
 ---@field vcount integer
 ---@field mapkey string

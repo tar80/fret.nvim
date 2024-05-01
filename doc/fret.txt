@@ -71,6 +71,7 @@ setup({cfg})                                             *fret.config.setup()*
         Parameters: ~
               {fret_timeout}        (integer):  |g:fret_timeout|
               {fret_enable_kana}    (boolean):  |g:fret_enable_kana|
+              {fret_enable_symbol}  (boolean):  |g:fret_enable_symbol|
               {fret_notify_repeat}  (boolean):  |g:fret_notify_repeat|
               {fret_hlmode}         (string):   |g:fret_hlmode|
               {mapkeys}             (table):    |fret-mapkeys|
@@ -89,6 +90,12 @@ g:fret_timeout                                                *g:fret_timeout*
 g:fret_enable_kana                                        *g:fret_enable_kana*
 
         Enable move to kana characters.
+
+        Type: `boolean`, Default: `false`
+
+g:fret_enable_symbol                                    *g:fret_enable_symbol*
+
+        Enable related-mode to symbol characters.
 
         Type: `boolean`, Default: `false`
 

@@ -31,6 +31,7 @@ function M.set_options(opts)
   vim.validate({
     fret_timeout = { opts.fret_timeout, 'number', true },
     fret_enable_kana = { opts.fret_enable_kana, 'boolean', true },
+    fret_enable_symbol = { opts.fret_enable_symbol, 'boolean', true },
     fret_repeat_notify = { opts.fret_repeat_notify, 'boolean', true },
     fret_hlmode = { opts.fret_hlmode, 'string', true },
     altkeys = { opts.altkeys, 'table', true },
@@ -38,6 +39,9 @@ function M.set_options(opts)
   })
   if opts.fret_enable_kana then
     vim.g.fret_enable_kana = opts.fret_enable_kana
+  end
+  if opts.fret_enable_symbol then
+    vim.g.fret_enable_symbol = opts.fret_enable_symbol
   end
   if opts.fret_repeat_notify then
     vim.g.fret_repeat_notify = opts.fret_repeat_notify

@@ -31,7 +31,6 @@ local hl_detail = {
 }
 local augroup = vim.api.nvim_create_augroup(UNIQ_ID, { clear = true })
 
-vim.g.fret_enable_kana = false
 vim.g.fret_timeout = 0
 _G._fret_highlights = {
   [0] = hlgroup.ignore,

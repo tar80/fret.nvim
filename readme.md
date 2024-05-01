@@ -40,6 +40,7 @@ It provides alternate keys to jump to related character.
 require('fret.config').setup({
   fret_timeout = 0,
   fret_enable_kana = false,
+  fret_enable_symbol = false,
   fret_repeat_notify = false,
   fret_hlmode = 'replace',
   mapkeys = {

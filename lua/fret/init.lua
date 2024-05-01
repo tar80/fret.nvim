@@ -41,6 +41,7 @@ function _session.new(mapkey, direction, till)
     hlmode = vim.g.fret_hlmode,
     notify = vim.g.fret_repeat_notify,
     enable_kana = vim.g.fret_enable_kana,
+    enable_symbol = vim.g.fret_enable_symbol,
     timeout = vim.g.fret_timeout,
     vcount = vim.v.count1,
     mapkey = mapkey,
@@ -139,14 +140,14 @@ local function _matcher(actual, enable_kana)
   return match, actual, char, altchar, double
 end
 
--- Store key information in database
+-- Store key information in Session.keys
 function _session.store_key(self, char, idx, byteidx, bytes, kana)
   local match, actual, altchar, double
   local level = 0
   if idx > self.till then
-    local vcount = self.keys.ignore[char]
+    local vcount = self.keys.ignore[char] or self.vcount
     if vcount ~= 0 then
-      vcount = vcount and (vcount - 1) or (self.vcount - 1)
+      vcount = vcount - 1
       self.keys.ignore[char] = vcount
     end
     match, actual, char, altchar, double = _matcher(char, kana)
@@ -167,7 +168,16 @@ function _session.store_key(self, char, idx, byteidx, bytes, kana)
       self.keys.first_idx[altchar] = idx
     end
   elseif char:match('[%d%p%s]') then
-    level = 0
+    if self.enable_symbol and level > 1 then
+      level = 3
+      local first = self.keys.first_idx[char]
+      if first then
+        self.keys.detail[first].level = level
+        self.keys.first_idx[char] = nil
+      end
+    else
+      level = 0
+    end
   elseif level == 2 then
     self.keys.second_idx[char] = idx
     if altchar and not self.keys.second_idx[altchar] then
@@ -310,11 +320,17 @@ local function _iter_marks(char)
   if not char then
     return
   end
+  local r_symbol = '123456!"#$%&'
+  local lower_symbol = [=[1234567890-^\@[;:],./\]=]
   local main, sub = Fret.altkeys.lshift, Fret.altkeys.rshift
-  if not main:find(char, 1, true) then
+  local rkeys = string.format('%s%s', sub, r_symbol)
+  if rkeys:find(char, 1, true) then
     main, sub = sub, main
   end
   local s = string.format('%s%s', main, sub)
+  if lower_symbol:find(char, 1, true) then
+    s = s:lower()
+  end
   local int = s:find(char, 1, true)
   local t = vim.split(s, '', { plain = true })
   if int then
@@ -416,13 +432,21 @@ function _session.related(self, input, lower)
   end
 end
 
+-- Whether a uppercase or a kana character
+---@param symbol boolean
+---@param char string
+---@return boolean
+local function _upper_or(symbol, char)
+  return symbol and char:match('[%w%p%s]') or char:match('%u')
+end
+
 -- Move the cursor to the desired position
 function _session.gain(self, input)
   local lower = input:lower()
   local count = self.keys.first_idx[lower]
   local subcount = self.keys.second_idx[lower]
   local is_lower = input:match('%U')
-  local is_upper = not is_lower and input:match('%u')
+  local is_upper = _upper_or(self.enable_symbol, input)
   -- Item that immediately moves the cursor to the key obtained by input
   if count and is_lower then
     if not self.operative then
@@ -475,11 +499,11 @@ function Fret.performing()
   local input = Session:key_in()
   if input then
     local count = Session.keys.first_idx[input]
-    if count and input:match('%u') then
+    if count and input:match('[%w%p%s]') then
       Session['dotrepeat'] = Session:operable(count)
       return
     end
-    input = input:match('[aiAI]') and '<Esc>' or input
+    input = input:match('[hjkl]') and input or '<Esc>'
     api.nvim_input(input)
   end
   _abort(Session.operative)
