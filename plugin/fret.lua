@@ -5,7 +5,7 @@ end
 vim.g.loaded_fret = true
 
 local UNIQ_ID = 'fret-nvim'
-local hlgroup = {
+local HLGROUP = {
   ignore = 'FretIgnore',
   first = 'FretCandidateFirst',
   second = 'FretCandidateSecond',
@@ -15,30 +15,30 @@ local hlgroup = {
 }
 local hl_detail = {
   light = {
-    [hlgroup.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
-    [hlgroup.first] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
-    [hlgroup.second] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
-    [hlgroup.sub] = { default = true, fg = 'LightBlue', bg = 'NONE' },
-    [hlgroup.alt] = { default = true, fg = 'LightCyan', bg = 'DarkCyan' },
+    [HLGROUP.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
+    [HLGROUP.first] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
+    [HLGROUP.second] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
+    [HLGROUP.sub] = { default = true, fg = 'LightBlue', bg = 'NONE' },
+    [HLGROUP.alt] = { default = true, fg = 'LightCyan', bg = 'DarkCyan' },
   },
   dark = {
-    [hlgroup.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
-    [hlgroup.first] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
-    [hlgroup.second] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
-    [hlgroup.sub] = { default = true, fg = 'DarkCyan', bg = 'NONE' },
-    [hlgroup.alt] = { default = true, fg = 'DarkGreen', bg = 'LightGreen' },
+    [HLGROUP.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
+    [HLGROUP.first] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
+    [HLGROUP.second] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
+    [HLGROUP.sub] = { default = true, fg = 'DarkCyan', bg = 'NONE' },
+    [HLGROUP.alt] = { default = true, fg = 'DarkGreen', bg = 'LightGreen' },
   },
 }
 local augroup = vim.api.nvim_create_augroup(UNIQ_ID, { clear = true })
 
 vim.g.fret_timeout = 0
 _G._fret_highlights = {
-  [0] = hlgroup.ignore,
-  [1] = hlgroup.first,
-  [2] = hlgroup.second,
-  [3] = hlgroup.sub,
-  [4] = hlgroup.alt,
-  [5] = hlgroup.hint,
+  [0] = HLGROUP.ignore,
+  [1] = HLGROUP.first,
+  [2] = HLGROUP.second,
+  [3] = HLGROUP.sub,
+  [4] = HLGROUP.alt,
+  [5] = HLGROUP.hint,
 }
 
 local rgx = vim.regex('^dark\\|light$')

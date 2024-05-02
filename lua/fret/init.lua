@@ -321,7 +321,7 @@ local function _iter_marks(char)
     return
   end
   local r_symbol = '123456!"#$%&'
-  local lower_symbol = [=[1234567890-^\@[;:],./\]=]
+  local lower_symbol = [=[1234567890-^\@[;:],./\ ]=]
   local main, sub = Fret.altkeys.lshift, Fret.altkeys.rshift
   local rkeys = string.format('%s%s', sub, r_symbol)
   if rkeys:find(char, 1, true) then
