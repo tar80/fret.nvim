@@ -385,19 +385,16 @@ function _session.create_line_marker(self, width, input, lower)
   end
   ---@cast iter_marks -?
   local related = function(v, count)
-    local mark
     if (v.level > 1) and (v.char == lower or v.altchar == lower) then
       local _, key = iter_marks:next()
       if key then
-        mark = _adjust_marker_width(v.double, key)
-        v.level = 4
         self.keys.first_idx[key] = count
+        v.level = 4
+        return _adjust_marker_width(v.double, key)
       end
-    else
-      mark = v.actual
-      v.level = 0
     end
-    return mark
+    v.level = 0
+    return v.actual
   end
   markers = self:get_markers(not input and normal or related)
   return markers
