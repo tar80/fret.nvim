@@ -66,26 +66,14 @@ end
 ---@param tbl table
 ---@param key string|integer
 ---@param value any
----@return table<string|integer,table>
 function M.tbl_insert(tbl, key, value)
   if type(tbl) ~= 'table' then
     tbl = {}
   end
   if not tbl[key] then
-    tbl[key] = value
+    tbl[key] = {}
   end
-  return tbl
-  -- return vim.list_extend(tbl[key], { value })
-end
-
----Set highlight on namespace
----@param ns integer
----@param highlights {[string]:{[string]:string}}
-function M.set_hl(ns, highlights)
-  for name, value in pairs(highlights) do
-    ns = name == 'NormalFloat' and ns or 0
-    api.nvim_set_hl(ns, name, value)
-  end
+  vim.list_extend(tbl[key], { value })
 end
 
 ---@param name string|string[]
@@ -174,6 +162,17 @@ function M.indicator(ns, text, timeout, row, col)
   vim.defer_fn(function()
     api.nvim_win_close(winid, true)
   end, timeout)
+end
+
+-- Show indicator on signcolumn
+---@param ns integer
+---@param row integer
+---@param col integer
+---@param opts vim.api.keyset.set_extmark
+function M.ext_sign(ns, row, col, opts)
+  local _opts = { sign_hl_group = 'Normal' }
+  opts = vim.tbl_extend('force', _opts, opts)
+  api.nvim_buf_set_extmark(0, ns, row, col, opts)
 end
 
 return M

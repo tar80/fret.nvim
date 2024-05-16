@@ -290,10 +290,11 @@ function _session.operable(self, count)
   if self.operative then
     select = self.reversive and 'hv' or 'v'
   end
+  local operator = vim.v.operator
   local keystroke = string.format('%s%s%s%s', select, vcount, self.mapkey, char)
   vim.cmd.normal({ keystroke, bang = true })
   if self.notify and self.operative then
-    local msg = string.format('%s: %s', 'dotrepeat', keystroke)
+    local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, char)
     util.notify(UNIQ_ID, msg, vim.log.levels.INFO, { title = UNIQ_ID })
   end
   return keystroke
