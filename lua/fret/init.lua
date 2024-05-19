@@ -1,6 +1,5 @@
 ---@module 'util'
-local util = require('fret.util')
--- local util = package.loaded['matchwith.util'] or require('fret.util')
+local util = package.loaded['matchwith.util'] or require('fret.util')
 local tbl = require('fret.tbl')
 local api = vim.api
 local fn = vim.fn
@@ -232,9 +231,11 @@ function _session.get_inlay_hints(self, width)
   local hints = {}
   iter:each(function(v)
     local byteidx = v.inlay_hint.position.character - self.front_byteidx + 1
-    local actual = v.inlay_hint.label[1].value
-    actual = string.format('%s%s', _hint(actual))
-    hints[byteidx] = { actual = actual, level = 5, bytes = #actual }
+    if byteidx ~= 1 then
+      local actual = v.inlay_hint.label[1].value
+      actual = string.format('%s%s', _hint(actual))
+      hints[byteidx] = { actual = actual, level = 5, bytes = #actual }
+    end
   end)
   return hints
 end

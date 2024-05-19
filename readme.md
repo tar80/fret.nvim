@@ -17,13 +17,13 @@ It provides alternate keys to jump to related character.
 
 ## Requirements
 
-- Neovim >= 0.10.0-dev-2999
+- Neovim >= 0.10.0
 
 ## Installation
 
 - lazy.nvim
 
-```lua:
+```lua
 {
   'tar80/fret.nvim',
   opts = {
@@ -55,9 +55,6 @@ require('fret.config').setup({
   },
 })
 ```
-## Known issues
-
-- Hint may appear twice when starting fret from cursor position just before inlay_hint
 
 ## Credits
 
