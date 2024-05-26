@@ -220,7 +220,8 @@ function _session.get_inlay_hints(self, width)
     return {}
   end
   local line = util.zerobase(self.cur_row)
-  local start, end_ = self.front_byteidx, self.front_byteidx + width
+  -- TODO: end_ index must de adjusted when wrapping
+  local start, end_ = self.front_byteidx + 1, self.front_byteidx + width
   local iter = vim.iter(inlay_hint.get({
     bufnr = self.bufnr,
     range = { start = { character = start, line = line }, ['end'] = { character = end_, line = line } },
@@ -231,11 +232,9 @@ function _session.get_inlay_hints(self, width)
   local hints = {}
   iter:each(function(v)
     local byteidx = v.inlay_hint.position.character - self.front_byteidx + 1
-    if byteidx ~= 1 then
       local actual = v.inlay_hint.label[1].value
       actual = string.format('%s%s', _hint(actual))
       hints[byteidx] = { actual = actual, level = 5, bytes = #actual }
-    end
   end)
   return hints
 end
