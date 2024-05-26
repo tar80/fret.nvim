@@ -55,6 +55,9 @@ require('fret.config').setup({
   },
 })
 ```
+## Known issues
+
+- Wrapped rows cannot be highlighted correctly
 
 ## Credits
 
