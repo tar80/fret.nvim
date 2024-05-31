@@ -90,7 +90,7 @@ function _session.set_line_informations(self)
     indices = line:sub(1, self.cur_col - leftcol)
   else
     self['front_count'] = vim.str_utfindex(line, self.cur_col + 1)
-    self['front_byteidx'] = vim.str_byteindex(line, self.front_count) --[[@as integer]]
+    self['front_byteidx'] = vim.str_byteindex(line, self.front_count)
     indices = line:sub(self.front_byteidx - leftcol + 1)
   end
   if indices == '' then
@@ -214,13 +214,23 @@ local function _hint(backward)
   return forward, backward
 end
 
+-- Extract a hint label
+---@param label table
+---@return string
+local function _hint_label(label)
+  local v = ''
+  for _, t in ipairs(label) do
+    v = string.format('%s%s', v, t.value)
+  end
+  return v
+end
+
 function _session.get_inlay_hints(self, width)
   local inlay_hint = vim.lsp.inlay_hint
   if not inlay_hint then
     return {}
   end
   local line = util.zerobase(self.cur_row)
-  -- TODO: end_ index must de adjusted when wrapping
   local start, end_ = self.front_byteidx + 1, self.front_byteidx + width
   local iter = vim.iter(inlay_hint.get({
     bufnr = self.bufnr,
@@ -232,9 +242,9 @@ function _session.get_inlay_hints(self, width)
   local hints = {}
   iter:each(function(v)
     local byteidx = v.inlay_hint.position.character - self.front_byteidx + 1
-      local actual = v.inlay_hint.label[1].value
-      actual = string.format('%s%s', _hint(actual))
-      hints[byteidx] = { actual = actual, level = 5, bytes = #actual }
+    local actual = _hint_label(v.inlay_hint.label)
+    actual = string.format('%s%s', _hint(actual))
+    hints[byteidx] = { actual = actual, level = 5, bytes = #actual }
   end)
   return hints
 end

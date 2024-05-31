@@ -58,6 +58,7 @@ require('fret.config').setup({
 ## Known issues
 
 - Wrapped rows cannot be highlighted correctly
+- Conceal attribute are not taken into account
 
 ## Credits
 
