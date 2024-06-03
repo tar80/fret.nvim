@@ -16,17 +16,17 @@ local HLGROUP = {
 local hl_detail = {
   light = {
     [HLGROUP.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
-    [HLGROUP.first] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
-    [HLGROUP.second] = { default = true, fg = 'DarkCyan', bg = 'NONE', underline = true },
-    [HLGROUP.sub] = { default = true, fg = 'LightBlue', bg = 'NONE' },
-    [HLGROUP.alt] = { default = true, fg = 'LightCyan', bg = 'DarkCyan' },
+    [HLGROUP.first] = { default = true, fg = 'DarkCyan', bg = 'NONE', bold = true, underline = true },
+    [HLGROUP.second] = { default = true, fg = 'DarkCyan', bg = 'NONE', bold = true, underline = true },
+    [HLGROUP.sub] = { default = true, fg = 'LightBlue', bg = 'NONE', underdotted = true },
+    [HLGROUP.alt] = { default = true, fg = 'LightCyan', bg = 'DarkCyan', bold = true },
   },
   dark = {
     [HLGROUP.ignore] = { default = true, fg = 'Gray', bg = 'NONE' },
-    [HLGROUP.first] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
-    [HLGROUP.second] = { default = true, fg = 'LightGreen', bg = 'NONE', underline = true },
-    [HLGROUP.sub] = { default = true, fg = 'DarkCyan', bg = 'NONE' },
-    [HLGROUP.alt] = { default = true, fg = 'DarkGreen', bg = 'LightGreen' },
+    [HLGROUP.first] = { default = true, fg = 'LightGreen', bg = 'NONE', bold = true, underline = true },
+    [HLGROUP.second] = { default = true, fg = 'LightGreen', bg = 'NONE', bold = true, underline = true },
+    [HLGROUP.sub] = { default = true, fg = 'DarkCyan', bg = 'NONE', underdotted = true },
+    [HLGROUP.alt] = { default = true, fg = 'DarkGreen', bg = 'LightGreen', bold = true },
   },
 }
 local augroup = vim.api.nvim_create_augroup(UNIQ_ID, { clear = true })

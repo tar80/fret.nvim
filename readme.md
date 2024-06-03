@@ -57,7 +57,7 @@ require('fret.config').setup({
 ```
 ## Known issues
 
-- Conceal attribute are not taken into account
+- Conceal attribute are not taken into account  
   and no good workaround has been found so far
 
 ## Credits
