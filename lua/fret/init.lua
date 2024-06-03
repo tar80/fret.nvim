@@ -23,7 +23,7 @@ local _session = {}
 
 -- Clean up the keys database
 local function _newkeys()
-  return { level = {}, ignore = {}, detail = {}, first_idx = {}, second_idx = {} }
+  return { level = {}, ignore = {}, detail = {}, mark_pos = {}, first_idx = {}, second_idx = {} }
 end
 
 ---@type Session
@@ -47,7 +47,6 @@ function _session.new(mapkey, direction, till)
     reversive = direction == 'forward',
     operative = util.is_operator(),
     till = till,
-    front_count = 0,
     front_byteidx = 0,
     keys = _newkeys(),
   }
@@ -71,30 +70,25 @@ function _session.set_line_informations(self)
   if line == '' then
     return
   end
-  local wincol = util.zerobase(fn.wincol())
   local winsaveview = fn.winsaveview()
-  local leftcol = winsaveview.leftcol
-  local info_width = wincol - (winsaveview.col - winsaveview.leftcol)
+  local info_width = fn.screenpos(self.winid, self.cur_row, 1).col - 1
   local win_width = api.nvim_win_get_width(self.winid)
+  local leftcol = winsaveview.leftcol
   if leftcol > 0 then
     line = line:sub(leftcol + 1, win_width + leftcol - info_width)
-    -- NOTE: whether matchchars should be supported
+    -- NOTE: whether listchars should be supported
     -- if api.nvim_get_option_value('list', {}) then
     --   local extends, precedes = util.expand_wrap_symbols()
     -- end
   end
-  ---@type string
+  ---@type string|nil
   local indices
   -- NOTE: consider that cur_col is zero-based
   if self.reversive then
     indices = line:sub(1, self.cur_col - leftcol)
   else
-    self['front_count'] = vim.str_utfindex(line, self.cur_col + 1)
-    self['front_byteidx'] = vim.str_byteindex(line, self.front_count)
+    self['front_byteidx'] = vim.str_byteindex(line, vim.str_utfindex(line, self.cur_col + 1))
     indices = line:sub(self.front_byteidx - leftcol + 1)
-  end
-  if indices == '' then
-    return
   end
   self['leftcol'] = leftcol
   self['info_width'] = info_width
@@ -139,24 +133,61 @@ local function _matcher(actual, enable_kana)
   return match, actual, char, altchar, double
 end
 
+-- Returns a function that extracts the first column of a wrapped line
+function _session.start_at_extmark(self, indices)
+  local enable_wrap = api.nvim_get_option_value('wrap', { win = self.winid })
+  local start_at = self.front_byteidx
+  local line_idx = 1
+  if not enable_wrap then
+    return function(_)
+      self.keys.mark_pos[line_idx] = self.front_byteidx
+      return line_idx
+    end
+  end
+  local prev_col
+  if self.reversive then
+    prev_col = fn.screenpos(self.winid, self.cur_row, #indices).col
+    return function(byteidx)
+      local screen = fn.screenpos(self.winid, self.cur_row, self.front_byteidx + byteidx)
+      local screen_col = util.zerobase(screen.col) - self.info_width
+      if screen_col > prev_col then
+        line_idx = line_idx + 1
+      end
+      prev_col = screen_col
+      self.keys.mark_pos[line_idx] = self.front_byteidx + util.zerobase(byteidx)
+      return line_idx
+    end
+  else
+    prev_col = fn.screenpos(self.winid, self.cur_row, start_at).col
+    return function(byteidx)
+      local screen = fn.screenpos(self.winid, self.cur_row, self.front_byteidx + byteidx)
+      local screen_col = util.zerobase(screen.col) - self.info_width
+      if screen_col < prev_col then
+        line_idx = line_idx + 1
+        self.keys.mark_pos[line_idx] = self.front_byteidx + util.zerobase(byteidx)
+      end
+      prev_col = screen_col
+      return line_idx
+    end
+  end
+end
+
 -- Store key information in Session.keys
-function _session.store_key(self, char, idx, byteidx, bytes, kana)
-  local match, actual, altchar, double
+function _session.store_key(self, actual, idx, byteidx, start_at, kana)
+  local match, char, altchar, double
   local level = 0
   if idx > self.till then
-    local vcount = self.keys.ignore[char] or self.vcount
+    local vcount = self.keys.ignore[actual] or self.vcount
     if vcount ~= 0 then
       vcount = vcount - 1
-      self.keys.ignore[char] = vcount
+      self.keys.ignore[actual] = vcount
     end
-    match, actual, char, altchar, double = _matcher(char, kana)
+    match, actual, char, altchar, double = _matcher(actual, kana)
     if match and (vcount < 1) then
       ---@cast char -?
       level = self.keys.level[char] and (self.keys.level[char] + 1) or 1
       self.keys.level[char] = math.min(2, level)
     end
-  else
-    actual = char
   end
   if not char then
     level = 0
@@ -199,7 +230,7 @@ function _session.store_key(self, char, idx, byteidx, bytes, kana)
     level = level,
     double = double,
     byteidx = byteidx,
-    bytes = bytes,
+    start_at = start_at,
   })
 end
 
@@ -260,10 +291,11 @@ function _session.get_keys(self, indices)
     end)
   end
   local iter = vim.iter(ipairs(pos))
+  local start_at = self:start_at_extmark(indices)
   iter:each(function(idx, byteidx)
-    char = indices:sub(byteidx, byteidx + vim.str_utf_end(indices, byteidx))
-    bytes = #char
-    self:store_key(char, idx, byteidx, bytes, self.enable_kana)
+    bytes = byteidx + vim.str_utf_end(indices, byteidx)
+    char = indices:sub(byteidx, bytes)
+    self:store_key(char, idx, byteidx, start_at(byteidx), self.enable_kana)
     new_indices = string.format('%s%s', new_indices, char)
   end)
   return new_indices
@@ -357,18 +389,18 @@ function _session.get_markers(self, callback)
   local markers = {}
   local forward = function(v)
     local hint = self.hints[v.byteidx]
-    table.insert(markers, 1, { callback(v, count), self.hlgroup[v.level] })
+    util.tbl_insert(markers, v.start_at, 1, { callback(v, count), self.hlgroup[v.level] })
     if hint then
-      table.insert(markers, 1, { hint.actual, self.hlgroup[hint.level] })
+      util.tbl_insert(markers, v.start_at, 1, { hint.actual, self.hlgroup[hint.level] })
     end
     count = count + 1
   end
   local backward = function(v)
     local hint = self.hints[v.byteidx]
     if hint then
-      table.insert(markers, { hint.actual, self.hlgroup[hint.level] })
+      util.tbl_insert(markers, v.start_at, { hint.actual, self.hlgroup[hint.level] })
     end
-    table.insert(markers, { callback(v, count), self.hlgroup[v.level] })
+    util.tbl_insert(markers, v.start_at, { callback(v, count), self.hlgroup[v.level] })
     count = count + 1
   end
   local iter = vim.iter(self.keys.detail)
@@ -379,7 +411,6 @@ end
 -- Create a table of extmarks
 function _session.create_line_marker(self, width, input, lower)
   self['hints'] = self.hints or self:get_inlay_hints(width)
-  local markers
   local iter_marks = _iter_marks(input)
   local normal = function(v)
     local mark
@@ -407,22 +438,23 @@ function _session.create_line_marker(self, width, input, lower)
     v.level = 0
     return v.actual
   end
-  markers = self:get_markers(not input and normal or related)
-  return markers
+  return self:get_markers(not input and normal or related)
 end
 
 -- Attach extmarks on current line
 function _session.attach_extmark(self, input, lower)
-  local col = self.front_byteidx
+  local row = util.zerobase(self.cur_row)
   local width = api.nvim_strwidth(self.line)
   local markers = self:create_line_marker(width, input, lower)
   if not input or (vim.tbl_count(self.keys.first_idx) > 1) then
-    api.nvim_buf_set_extmark(self.bufnr, self.ns, util.zerobase(self.cur_row), col, {
-      end_col = width,
-      virt_text = markers,
-      virt_text_pos = 'overlay',
-      hl_mode = self.hlmode,
-    })
+    for line_idx, marker_text in pairs(markers) do
+      api.nvim_buf_set_extmark(self.bufnr, self.ns, row, self.keys.mark_pos[line_idx], {
+        end_col = width,
+        virt_text = marker_text,
+        virt_text_pos = 'overlay',
+        hl_mode = self.hlmode,
+      })
+    end
     vim.cmd.redraw()
   end
 end
@@ -444,7 +476,7 @@ end
 ---@param symbol boolean
 ---@param char string
 ---@return boolean
-local function _upper_or(symbol, char)
+local function _upper_or_kana(symbol, char)
   return symbol and char:match('[%w%p%s]') or char:match('%u')
 end
 
@@ -454,7 +486,7 @@ function _session.gain(self, input)
   local count = self.keys.first_idx[lower]
   local subcount = self.keys.second_idx[lower]
   local is_lower = input:match('%U')
-  local is_upper = _upper_or(self.enable_symbol, input)
+  local is_upper = _upper_or_kana(self.enable_symbol, input)
   -- Item that immediately moves the cursor to the key obtained by input
   if count and is_lower then
     if not self.operative then

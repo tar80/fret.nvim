@@ -3,7 +3,7 @@
 ---@alias Direction 'forward'|'backward'
 ---@alias Hlgroup 'FretCandidateFirst'|'FretCandidateSecond'|'FretCandidateSub'|'FretAlternative'|'FretIgnore'
 ---@alias CharHighlight {[integer]:string,[integer]:Hlgroup}
----@alias Details {actual:string,char:string,altchar:string,level:integer,double:boolean,byteidx:integer,bytes:integer}
+---@alias Details {actual:string,char:string,altchar:string,level:integer,double:boolean,byteidx:integer,start_at:integer}
 ---@alias HintDetails {actual:string,level:integer,bytes:integer}
 
 ---@class Options
@@ -31,7 +31,6 @@
 ---@field reversive boolean
 ---@field operative boolean
 ---@field till integer
----@field front_count integer
 ---@field front_byteidx integer
 ---@field cur_row integer
 ---@field cur_col integer
@@ -45,9 +44,10 @@
 ---@class Keys
 ---@field level table<string,integer>
 ---@field ignore table<string,integer>
+---@field detail Details
+---@field mark_pos table<integer,integer>
 ---@field first_idx table<string,integer>
 ---@field second_idx table<string,integer>
----@field detail Details
 
 ---@class Fret
 ---@field public mapped_trigger boolean?
@@ -61,7 +61,8 @@
 ---@class Session:Instance
 ---@field new fun(mapkey:string,direction:Direction,till:integer):Session
 ---@field set_line_informations fun(self:self):string?
----@field store_key fun(self:self,char:string,idx:integer,byteidx:integer,bytes:integer,kana:boolean)
+---@field start_at_extmark fun(self:self,indices:string):fun(integer):integer
+---@field store_key fun(self:self,char:string,idx:integer,byteidx:integer,start_at:integer,kana:boolean)
 ---@field get_inlay_hints fun(self:self,width:integer):table<integer,HintDetails>?
 ---@field get_keys fun(self:self,indices:string):string
 ---@field key_in fun(self:self):string?
