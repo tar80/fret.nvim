@@ -22,6 +22,11 @@ Move the cursor to the desired character with fewer keystrokes.
 In addition to the general f/t plugin behavior, it implements Related-mode.
 It provides alternate keys to jump to related character.
 
+The maximum number of characters recognized by fret is limited to 1000 chara-
+cters due to performance reasons. For cases consisting of tens of thousands
+of characters, such as minified code, please use a separate plugin dedicated
+to in-screen searching.
+
 ==============================================================================
 USAGE                                                             *fret-usage*
 

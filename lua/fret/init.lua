@@ -292,11 +292,16 @@ function _session.get_keys(self, indices)
   end
   local iter = vim.iter(ipairs(pos))
   local start_at = self:start_at_extmark(indices)
+  local i, limit = 1, 1000
   iter:each(function(idx, byteidx)
     bytes = byteidx + vim.str_utf_end(indices, byteidx)
     char = indices:sub(byteidx, bytes)
     self:store_key(char, idx, byteidx, start_at(byteidx), self.enable_kana)
     new_indices = string.format('%s%s', new_indices, char)
+    if i > limit then
+      iter:last()
+    end
+    i = i + 1
   end)
   return new_indices
 end

@@ -40,7 +40,7 @@ describe('.echo()', function()
     local msg = { { 'table' }, { 'of', 'Error' }, { 'messages', 'Warn' } }
     local expects = { { '[Name] subject: ' }, unpack(msg) }
     util.echo(name, subject, msg)
-    assert.spy(s).was.called_with(expects, false, {})
+    assert.stub(s).was.called_with(expects, false, {})
   end)
 end)
 
@@ -153,7 +153,7 @@ describe('.set_timer()', function()
 end)
 
 describe('.indicator()', function()
-  local ns = vim.api.nvim_create_namespace('test')
+  local ns = vim.api.nvim_create_namespace('fret_test')
 
   it('should display an indicator', function()
     local text = 'test'
@@ -178,6 +178,16 @@ describe('.ext_sign()', function()
   local _opts = { sign_hl_group = 'Normal' }
 
   it('should call nvim_buf_set_extmark with default opts', function()
+    local s = stub(vim.api, 'nvim_buf_set_extmark')
+    local winid = 0
+    local row, col = 1, 1
+    local opts = {}
+    local expects = vim.tbl_extend('force', _opts, opts)
+    util.ext_sign(winid, row, col, opts)
+    assert.stub(s).was.called_with(0, winid, row, col, expects)
+  end)
+
+  it('should call nvim_buf_set_extmark with specified opts', function()
     local s = stub(vim.api, 'nvim_buf_set_extmark')
     local winid = 0
     local row, col = 1, 1
