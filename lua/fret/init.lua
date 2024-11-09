@@ -37,6 +37,7 @@ function _session.new(mapkey, direction, till)
     hlgroup = hlgroup,
     bufnr = api.nvim_get_current_buf(),
     winid = api.nvim_get_current_win(),
+    conceallevel = vim.wo.conceallevel,
     hlmode = vim.g.fret_hlmode,
     notify = vim.g.fret_repeat_notify,
     enable_kana = vim.g.fret_enable_kana,
@@ -256,6 +257,34 @@ local function _hint_label(label)
   return v
 end
 
+function _session.is_concealed(self)
+  if self.conceallevel == 0 then
+    return function()
+      return false
+    end
+  end
+  local row = util.zerobase(self.cur_row)
+  if self.reversive then
+    return function(byteidx)
+      local skip = false
+      local capture = vim.treesitter.get_captures_at_pos(0, row, byteidx - 1)[1]
+      if capture and capture.metadata.conceal == '' then
+        skip = true
+      end
+      return skip
+    end
+  else
+    return function(byteidx)
+      local skip = false
+      local capture = vim.treesitter.get_captures_at_pos(0, row, self.front_byteidx + byteidx - 1)[1]
+      if capture and capture.metadata.conceal == '' then
+        skip = true
+      end
+      return skip
+    end
+  end
+end
+
 function _session.get_inlay_hints(self, width)
   local inlay_hint = vim.lsp.inlay_hint
   if not inlay_hint then
@@ -290,18 +319,28 @@ function _session.get_keys(self, indices)
       return x > y
     end)
   end
+
+  ---NOTE: If the line length exceeds 1000 characters, the iteration is aborted.
+  local i, limit = 1, 1000
   local iter = vim.iter(ipairs(pos))
   local start_at = self:start_at_extmark(indices)
-  local i, limit = 1, 1000
+  local concealment_status = self:is_concealed()
+  local skip_idx = 0
   iter:each(function(idx, byteidx)
+    if concealment_status(byteidx) then
+      skip_idx = skip_idx + 1
+      i = i + 1
+      return
+    end
+    idx = idx - skip_idx
     bytes = byteidx + vim.str_utf_end(indices, byteidx)
     char = indices:sub(byteidx, bytes)
     self:store_key(char, idx, byteidx, start_at(byteidx), self.enable_kana)
     new_indices = string.format('%s%s', new_indices, char)
+    i = i + 1
     if i > limit then
       iter:last()
     end
-    i = i + 1
   end)
   return new_indices
 end

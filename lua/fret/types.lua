@@ -21,6 +21,7 @@
 ---@field hlgroup table<Hlgroup,string>
 ---@field bufnr integer
 ---@field winid integer
+---@field conceallevel integer
 ---@field hlmode string
 ---@field notify boolean
 ---@field enable_kana boolean
