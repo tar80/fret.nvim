@@ -1,5 +1,13 @@
+---@class Fret
+local Fret = {}
+
 ---@module 'util'
-local util = package.loaded['matchwith.util'] or require('fret.util')
+local util = setmetatable({}, {
+  __index = function(t, k)
+    t = package.loaded['matchwith.util'] or require('fret.util')
+    return t[k]
+  end,
+})
 local tbl = require('fret.tbl')
 local api = vim.api
 local fn = vim.fn
@@ -7,38 +15,46 @@ local fn = vim.fn
 local UNIQ_ID = 'fret-nvim'
 local L_SHIFT = 'JKLUIOPNMHY'
 local R_SHIFT = 'FDSAREWQVCXZGTB'
+local BEACON = {
+  hl = 'FretAlternative',
+  blend = 30,
+  decay = 15,
+}
 
 local ns = api.nvim_create_namespace(UNIQ_ID)
 local timer = util.set_timer()
 local hlgroup = _G._fret_highlights
 _G._fret_highlights = nil
 
----@class Fret
-local Fret = {}
-Fret.altkeys = { lshift = L_SHIFT, rshift = R_SHIFT }
+Fret.altkeys = {}
 Fret.mapped_trigger = false
-
----@class Session
-local _session = {}
 
 -- Clean up the keys database
 local function _newkeys()
   return { level = {}, ignore = {}, detail = {}, mark_pos = {}, first_idx = {}, second_idx = {} }
 end
 
----@type Session
+---@class Session
 local Session = { keys = _newkeys() }
+
+---@class Session
+local _session = {}
 
 -- Start new session
 function _session.new(mapkey, direction, till)
+  local winid = api.nvim_get_current_win()
+  local pos = api.nvim_win_get_cursor(winid)
   local self = {
     ns = ns,
     timer = timer,
     hlgroup = hlgroup,
     bufnr = api.nvim_get_current_buf(),
-    winid = api.nvim_get_current_win(),
+    winid = winid,
+    cur_row = pos[1],
+    cur_col = pos[2],
     conceallevel = vim.wo.conceallevel,
     hlmode = vim.g.fret_hlmode,
+    beacon = vim.g.fret_beacon,
     notify = vim.g.fret_repeat_notify,
     enable_kana = vim.g.fret_enable_kana,
     enable_symbol = vim.g.fret_enable_symbol,
@@ -51,9 +67,6 @@ function _session.new(mapkey, direction, till)
     front_byteidx = 0,
     keys = _newkeys(),
   }
-  local pos = api.nvim_win_get_cursor(self.winid)
-  self['cur_row'] = pos[1]
-  self['cur_col'] = pos[2]
   return setmetatable(self, { __index = _session })
 end
 
@@ -72,6 +85,7 @@ function _session.set_line_informations(self)
     return
   end
   local winsaveview = fn.winsaveview()
+  ---@type integer
   local info_width = fn.screenpos(self.winid, self.cur_row, 1).col - 1
   local win_width = api.nvim_win_get_width(self.winid)
   local leftcol = winsaveview.leftcol
@@ -82,12 +96,15 @@ function _session.set_line_informations(self)
     --   local extends, precedes = util.expand_wrap_symbols()
     -- end
   end
-  ---@type string|nil
+  ---@type string?
   local indices
   -- NOTE: consider that cur_col is zero-based
   if self.reversive then
     indices = line:sub(1, self.cur_col - leftcol)
   else
+    ---NOTE: An additional parameter was added to specify the character encoding as the second argument.
+    ---      This needs to be corrected for Neovim 0.11.0 release.
+    ---@diagnostic disable-next-line: param-type-mismatch, missing-parameter
     self['front_byteidx'] = vim.str_byteindex(line, vim.str_utfindex(line, self.cur_col + 1))
     indices = line:sub(self.front_byteidx - leftcol + 1)
   end
@@ -365,6 +382,9 @@ function _session.repeatable(self, count)
   end
   local keystroke = string.format('%s%s%s%s', till, self.vcount, self.mapkey, self.keys.detail[count].actual)
   vim.cmd.normal({ keystroke, bang = true })
+  if self.beacon and not self.operative then
+    Fret.beacon()
+  end
 end
 
 -- Operable key handring
@@ -379,6 +399,9 @@ function _session.operable(self, count)
   local operator = vim.v.operator
   local keystroke = string.format('%s%s%s%s', select, vcount, self.mapkey, char)
   vim.cmd.normal({ keystroke, bang = true })
+  if self.beacon and not self.operative then
+    Fret.beacon()
+  end
   if self.notify and self.operative then
     local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, char)
     util.notify(UNIQ_ID, msg, vim.log.levels.INFO, { title = UNIQ_ID })
@@ -389,6 +412,7 @@ end
 -- Finish of key operation
 function _session.finish(self)
   self.timer.stop()
+  ---@class Session
   Session = { dotrepeat = self.dotrepeat, keys = _newkeys() }
 end
 
@@ -564,6 +588,7 @@ end
 function Fret.playing(mapkey, direction, till)
   Session = _session.new(mapkey, direction, till)
   local indices = Session:set_line_informations()
+  ---@diagnostic disable-next-line: param-type-mismatch, missing-parameter
   if not indices or (vim.str_utfindex(indices, #indices) <= Session.till) then
     return
   end
@@ -599,11 +624,19 @@ function Fret.dotrepeat()
 end
 
 function Fret.setup(opts)
-  local ok = require('fret.config').set_options(opts)
-  if not ok then
+  local defaults = require('fret.config').set_options(opts)
+  if not defaults then
     util.notify(UNIQ_ID, 'Error: Requires arguments', vim.log.levels.ERROR, { title = UNIQ_ID })
+  else
+    Fret.altkeys.lshift = (defaults.altkeys.lshift or L_SHIFT):upper()
+    Fret.altkeys.rshift = (defaults.altkeys.rshift or R_SHIFT):upper()
+    Fret.altkeys = vim.tbl_extend('force', Fret.altkeys, defaults.altkeys)
+    local beacon = vim.tbl_extend('force', BEACON, defaults.beacon)
+    Fret.beacon = function()
+      util.beacon(ns, beacon.hl, beacon.blend, beacon.decay)
+    end
   end
-  return ok
+  return defaults
 end
 
 return Fret

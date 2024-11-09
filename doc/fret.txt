@@ -79,6 +79,8 @@ setup({cfg})                                             *fret.config.setup()*
               {fret_enable_symbol}  (boolean):  |g:fret_enable_symbol|
               {fret_notify_repeat}  (boolean):  |g:fret_notify_repeat|
               {fret_hlmode}         (string):   |g:fret_hlmode|
+              {fret_beacon}         (string):   |g:fret_beacon|
+              {beacon_opts}         (table):    |fret-beacon|
               {mapkeys}             (table):    |fret-mapkeys|
               {altkeys}             (table):    |fret-altkeys|
 
@@ -117,6 +119,12 @@ g:fret_hlmode
 
         Type: string, Default: "replace"
 
+g:fret_beacon
+
+        Displays a beacon
+
+        Type: boolean, Default: false
+
 ------------------------------------------------------------------------------
 CONFIGURATION                                             *fret-configuration*
 
@@ -125,15 +133,29 @@ It automatically registers keymaps from the |fret-mapkeys| values.
 
 Default settings ~
 
+beacon                                                          *fret-beacon*
+
+        Beacon options.
+        blend:[0-100]  the initial winblend value
+        decay:[0-100]  the decay value of the beacon
+                       10-20 are probably effective
+
+        Type: table,
+        Default: {
+          hl = "FretAlternative",
+          blend = 30,
+          decay = 15
+        }
+
 mapkeys                                                         *fret-mapkeys*
 
         Keys to assign fret function.
 
         Type: `table`,
         Default: {
-          fret_f = "f"
-          fret_F = "F"
-          fret_t = "t"
+          fret_f = "f",
+          fret_F = "F",
+          fret_t = "t",
           fret_T = "T"
         }
 

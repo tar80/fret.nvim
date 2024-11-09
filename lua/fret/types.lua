@@ -12,6 +12,8 @@
 ---@field fret_enable_symbol boolean
 ---@field fret_repeat_notify boolean
 ---@field fret_hlmode string
+---@field fret_beacon string
+---@field beacon_opts {hl:string,blend:integer,decay:integer}
 ---@field altkeys table<AltKeys,string>
 ---@field mapkeys table<MapKeys,string>
 
@@ -23,6 +25,7 @@
 ---@field winid integer
 ---@field conceallevel integer
 ---@field hlmode string
+---@field beacon boolean
 ---@field notify boolean
 ---@field enable_kana boolean
 ---@field enable_symbol boolean
@@ -53,11 +56,12 @@
 ---@class Fret
 ---@field public mapped_trigger boolean?
 ---@field public altkeys {[AltKeys]:string}
+---@field public beacon fun():nil
 ---@field public inst fun(self:self,mapkey:string,direction:Direction,till:integer):nil
 ---@field public playing fun(mapkey:string,direction:Direction,till:integer):nil
 ---@field public performing fun():nil
 ---@field public dotrepeat fun():nil
----@field public setup fun(opts:Options):boolean
+---@field public setup fun(opts:Options):table?
 
 ---@class Session:Instance
 ---@field new fun(mapkey:string,direction:Direction,till:integer):Session

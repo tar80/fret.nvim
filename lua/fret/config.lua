@@ -1,7 +1,5 @@
-local Fret = require('fret')
-
 ---@class config
----@field set_options fun(opts:Options):boolean?
+---@field set_options fun(opts:Options):table?
 local M = {}
 
 local _default_keys = {
@@ -19,24 +17,24 @@ local function register_keymap(mapkey, direction, till)
   local cmd = string.format('<Cmd>lua require("fret"):inst("%s", "%s", %s)<CR>', mapkey, direction, till)
   local desc = string.format('(fret-%s) Search for %s match', mapkey, direction)
   vim.keymap.set({ 'n', 'x', 'o' }, mapkey, function()
-    Fret.mapped_trigger = true
+    require('fret').mapped_trigger = true
     return cmd
   end, { expr = true, desc = desc })
 end
 
 function M.set_options(opts)
   if not opts then
-    return false
+    return
   end
-  vim.validate({
-    fret_timeout = { opts.fret_timeout, 'number', true },
-    fret_enable_kana = { opts.fret_enable_kana, 'boolean', true },
-    fret_enable_symbol = { opts.fret_enable_symbol, 'boolean', true },
-    fret_repeat_notify = { opts.fret_repeat_notify, 'boolean', true },
-    fret_hlmode = { opts.fret_hlmode, 'string', true },
-    altkeys = { opts.altkeys, 'table', true },
-    mapkeys = { opts.mapkeys, 'table' },
-  })
+  vim.validate('fret_timeout', opts.fret_timeout, 'number', true)
+  vim.validate('fret_enable_kana', opts.fret_enable_kana, 'boolean', true)
+  vim.validate('fret_enable_symbol', opts.fret_enable_symbol, 'boolean', true)
+  vim.validate('fret_repeat_notify', opts.fret_repeat_notify, 'boolean', true)
+  vim.validate('fret_hlmode', opts.fret_hlmode, 'string', true)
+  vim.validate('fret_beacon', opts.fret_beacon, 'boolean', true)
+  vim.validate('beacon_opts', opts.beacon_opts, 'table', true)
+  vim.validate('altkeys', opts.altkeys, 'table', true)
+  vim.validate('mapkeys', opts.mapkeys, 'table')
   if opts.fret_enable_kana then
     vim.g.fret_enable_kana = opts.fret_enable_kana
   end
@@ -49,16 +47,11 @@ function M.set_options(opts)
   if opts.fret_hlmode then
     vim.g.fret_hlmode = opts.fret_hlmode
   end
+  if opts.fret_beacon then
+    vim.g.fret_beacon = opts.fret_beacon
+  end
   if opts.fret_timeout then
     vim.g.fret_timeout = opts.fret_timeout
-  end
-  if opts.altkeys then
-    if opts.altkeys.lshift then
-      Fret.altkeys.lshift = string.upper(opts.altkeys.lshift)
-    end
-    if opts.altkeys.rshift then
-      Fret.altkeys.rshift = string.upper(opts.altkeys.rshift)
-    end
   end
   if opts.mapkeys then
     for k, v in pairs(_default_keys) do
@@ -68,7 +61,10 @@ function M.set_options(opts)
       end
     end
   end
-  return true
+  return {
+    altkeys = opts.altkeys or {},
+    beacon = opts.beacon_opts or {}
+  }
 end
 
 return M

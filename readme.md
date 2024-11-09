@@ -12,6 +12,7 @@ It provides alternate keys to jump to related character.
 - [x] Repeat-keys (`;` `,` `.`) are valid
 - [x] Always ignores uppercase and lowercase letters
 - [x] Supports Kana-moji
+- [x] Beacon flashes when cursor moves
 
 [demo.mp4](https://github.com/tar80/fret.nvim/assets/45842304/b2957866-9184-4ea7-9b79-2b18dca17853)
 
@@ -43,6 +44,8 @@ require('fret.config').setup({
   fret_enable_symbol = false,
   fret_repeat_notify = false,
   fret_hlmode = 'replace',
+  fret_beacon = false,
+  beacon_opts = {hl = 'FretAlternative', blend = 30, freq = 15},
   mapkeys = {
     fret_f = 'f',
     fret_F = 'F',
@@ -57,8 +60,7 @@ require('fret.config').setup({
 ```
 ## Known issues
 
-- Conceal attribute are not taken into account  
-  and no good workaround has been found so far
+- [x] Now considers the conceal attribute
 
 ## Credits
 

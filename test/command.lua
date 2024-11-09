@@ -1,6 +1,7 @@
 local ns = setmetatable({}, {
   __index = {
     namespace = vim.api.nvim_create_namespace('test'),
+    floatwin_ids = {},
     clear = function(self)
       vim.api.nvim_buf_clear_namespace(0, self.namespace, 0, -1)
     end,
@@ -20,6 +21,33 @@ local ns = setmetatable({}, {
         virt_text_pos = 'overlay',
         hl_mode = 'combine',
       })
+    end,
+    open_floarwin = function(self, row, col)
+      local opts = {
+        relative = 'win',
+        height = 1,
+        width = 1,
+        row = row,
+        col = col,
+        focusable = false,
+        noautocmd = true,
+        border = { '', '', '', '❰', '', '', '', '❱' },
+        -- border = { "", "" ,"", "⡷", "", "", "", "⢾" },
+        style = 'minimal',
+      }
+      local bufnr = vim.api.nvim_create_buf(false, true)
+      local winid = vim.api.nvim_open_win(bufnr, false, opts)
+      vim.api.nvim_win_set_hl_ns(winid, self.namespace)
+      vim.wo[winid].winhl = 'Normal:Search'
+      vim.api.nvim_set_option_value('winblend', 0, { win = winid })
+      table.insert(self.floatwin_ids, bufnr)
+    end,
+    close_floatwin = function(self)
+      if #self.floatwin_ids > 0 then
+        for _, bufnr in ipairs(self.floatwin_ids) do
+          vim.api.nvim_buf_delete(bufnr, { force = true })
+        end
+      end
     end,
   },
 })
@@ -43,12 +71,20 @@ vim.api.nvim_create_user_command('TestSetCursor', function(opts)
   return vim.api.nvim_win_set_cursor(0, { tonumber(opts.fargs[1]), tonumber(opts.fargs[2]) })
 end, { nargs = '+' })
 vim.api.nvim_create_user_command('TestCharpart', function(opts)
-  -- local _, col = unpack(vim.api.nvim_win_get_cursor(0))
+  local _, col = unpack(vim.api.nvim_win_get_cursor(0))
   local line = vim.api.nvim_get_current_line()
-  local chars = vim.fn.strcharpart(line, 0, opts.args)
-  print(chars)
-end, { nargs = 1 })
+  print(line:sub(0, col))
+end, { nargs = '?' })
 vim.api.nvim_create_user_command('TestExtmark', function(opts)
   ns:add_extmark(opts.fargs[1], opts.fargs[2])
+end, { nargs = '*' })
+vim.api.nvim_create_user_command('TestFloatwin', function(opts)
+  if opts.args == 'close' then
+    ns:close_floatwin()
+  else
+    local row = opts.fargs[1] and tonumber(opts.fargs[1]) or vim.fn.winline() - 1
+    local col = opts.fargs[1] and tonumber(opts.fargs[2]) or vim.fn.wincol() - 2
+    ns:open_floarwin(row, col)
+  end
 end, { nargs = '*' })
 ns:clear()
