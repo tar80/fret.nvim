@@ -59,7 +59,7 @@ Note
 • Operator commands can be executed even in related-mode, but repeat commands
   may differ from actual keystrokes due to internal command optimization.
   Even in such cases, you can display the contents of the repeat command
-  by configuring |fret_notify_repeat|
+  by configuring |fret_repeat_notify|
 
 • Case B. highlighting is for alphabets(and kana charactors)
 
@@ -77,7 +77,8 @@ setup({cfg})                                             *fret.config.setup()*
               {fret_timeout}        (integer):  |g:fret_timeout|
               {fret_enable_kana}    (boolean):  |g:fret_enable_kana|
               {fret_enable_symbol}  (boolean):  |g:fret_enable_symbol|
-              {fret_notify_repeat}  (boolean):  |g:fret_notify_repeat|
+              {fret_repeat_notify}  (boolean):  |g:fret_repeat_notify|
+              {fret_smart_fold}     (boolean):  |g:fret_smart_fold|
               {fret_hlmode}         (string):   |g:fret_hlmode|
               {fret_beacon}         (string):   |g:fret_beacon|
               {beacon_opts}         (table):    |fret-beacon|
@@ -108,18 +109,25 @@ g:fret_enable_symbol                                    *g:fret_enable_symbol*
 
 g:fret_repeat_notify                                    *g:fret_repeat_notify*
 
-        Display dot-repeat command with notification message
+        Display dot-repeat command with notification message.
 
         Type: boolean, Default: false
 
-g:fret_hlmode
+g:fret_smart_fold                                          *g:fret_smart_fold*
+
+        When the cursor is at the beginning of a fold, unfold it.
+        If the cursor has not moved, it will automatically fold again.
+
+        Type: boolean, Default: false
+
+g:fret_hlmode                                                  *g:fret_hlmode*
 
         This is how to handle the background of highlighted characters
         Value is the same as the option "hl_mode" of nvim_buf_set_extmark()
 
         Type: string, Default: "replace"
 
-g:fret_beacon
+g:fret_beacon                                                  *g:fret_beacon*
 
         Displays a beacon
 
@@ -133,7 +141,7 @@ It automatically registers keymaps from the |fret-mapkeys| values.
 
 Default settings ~
 
-beacon                                                          *fret-beacon*
+beacon                                                           *fret-beacon*
 
         Beacon options.
         blend:[0-100]  the initial winblend value

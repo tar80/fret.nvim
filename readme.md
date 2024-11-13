@@ -12,7 +12,8 @@ It provides alternate keys to jump to related character.
 - [x] Repeat-keys (`;` `,` `.`) are valid
 - [x] Always ignores uppercase and lowercase letters
 - [x] Supports Kana-moji
-- [x] Beacon flashes when cursor moves
+- [x] Beacon flashes when cursor jumps
+- [x] Smart fold(automatically open and close folding)
 
 [demo.mp4](https://github.com/tar80/fret.nvim/assets/45842304/b2957866-9184-4ea7-9b79-2b18dca17853)
 
@@ -43,9 +44,14 @@ require('fret.config').setup({
   fret_enable_kana = false,
   fret_enable_symbol = false,
   fret_repeat_notify = false,
+  fret_smart_fold = false,
   fret_hlmode = 'replace',
   fret_beacon = false,
-  beacon_opts = {hl = 'FretAlternative', blend = 30, freq = 15},
+  beacon_opts = {
+    hl = 'FretAlternative',
+    blend = 30,
+    freq = 15
+  },
   mapkeys = {
     fret_f = 'f',
     fret_F = 'F',
@@ -58,6 +64,7 @@ require('fret.config').setup({
   },
 })
 ```
+
 ## Known issues
 
 - [x] Now considers the conceal attribute
