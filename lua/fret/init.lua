@@ -58,6 +58,7 @@ function _session.new(mapkey, direction, till)
     notify = vim.g.fret_repeat_notify,
     enable_kana = vim.g.fret_enable_kana,
     enable_symbol = vim.g.fret_enable_symbol,
+    enable_fold = vim.g.fret_smart_fold,
     timeout = vim.g.fret_timeout,
     vcount = vim.v.count1,
     mapkey = mapkey,
@@ -75,6 +76,24 @@ end
 local function _abort(operative)
   if operative then
     api.nvim_input('<Cmd>normal! u<CR>')
+  end
+end
+
+-- Open the fold. If it is folded
+---@param session Session
+---@return true?
+local function _fold_open(session)
+  if session.enable_fold and (vim.fn.foldclosed(session.cur_row) ~= -1) then
+    vim.cmd.foldopen()
+    return true
+  end
+end
+
+-- Close the fold. If it was opened by fret
+---@param is_fold boolean
+local function _fold_close(is_fold)
+  if is_fold then
+    vim.cmd.foldclose()
   end
 end
 
@@ -103,7 +122,7 @@ function _session.set_line_informations(self)
     indices = line:sub(1, self.cur_col - leftcol)
   else
     ---NOTE: An additional parameter was added to specify the character encoding as the second argument.
-    ---      This needs to be corrected for Neovim 0.11.0 release.
+    ---     This needs to be corrected for Neovim 0.11.0 release.
     ---@diagnostic disable-next-line: param-type-mismatch, missing-parameter
     self['front_byteidx'] = vim.str_byteindex(line, vim.str_utfindex(line, self.cur_col + 1))
     indices = line:sub(self.front_byteidx - leftcol + 1)
@@ -366,6 +385,7 @@ end
 function _session.key_in(self)
   self.timer.debounce(vim.g.fret_timeout, function()
     api.nvim_input('<Esc>')
+    _fold_close(self.is_fold)
   end)
   local input = fn.nr2char(fn.getchar())
   api.nvim_buf_clear_namespace(self.bufnr, self.ns, self.cur_row - 1, self.cur_row)
@@ -383,7 +403,7 @@ function _session.repeatable(self, count)
   local keystroke = string.format('%s%s%s%s', till, self.vcount, self.mapkey, self.keys.detail[count].actual)
   vim.cmd.normal({ keystroke, bang = true })
   if self.beacon and not self.operative then
-    Fret.beacon()
+    Fret.flashing()
   end
 end
 
@@ -400,7 +420,7 @@ function _session.operable(self, count)
   local keystroke = string.format('%s%s%s%s', select, vcount, self.mapkey, char)
   vim.cmd.normal({ keystroke, bang = true })
   if self.beacon and not self.operative then
-    Fret.beacon()
+    Fret.flashing()
   end
   if self.notify and self.operative then
     local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, char)
@@ -533,6 +553,7 @@ function _session.related(self, input, lower)
   local match_item = vim.tbl_count(self.keys.first_idx)
   if match_item == 0 then
     api.nvim_input('<Esc>')
+    _fold_close(self.is_fold)
   elseif match_item == 1 then
     self:operable(self.keys.first_idx[input])
   else
@@ -587,6 +608,7 @@ end
 -- Start operation
 function Fret.playing(mapkey, direction, till)
   Session = _session.new(mapkey, direction, till)
+  Session['is_fold'] = _fold_open(Session)
   local indices = Session:set_line_informations()
   ---@diagnostic disable-next-line: param-type-mismatch, missing-parameter
   if not indices or (vim.str_utfindex(indices, #indices) <= Session.till) then
@@ -599,6 +621,7 @@ function Fret.playing(mapkey, direction, till)
     Session:gain(input)
   else
     _abort(Session.operative)
+    _fold_close(Session.is_fold)
   end
   Session:finish()
 end
@@ -614,6 +637,7 @@ function Fret.performing()
     end
     input = input:match('[hjkl]') and input or '<Esc>'
     api.nvim_input(input)
+    _fold_close(Session.is_fold)
   end
   _abort(Session.operative)
 end
@@ -632,7 +656,7 @@ function Fret.setup(opts)
     Fret.altkeys.rshift = (defaults.altkeys.rshift or R_SHIFT):upper()
     Fret.altkeys = vim.tbl_extend('force', Fret.altkeys, defaults.altkeys)
     local beacon = vim.tbl_extend('force', BEACON, defaults.beacon)
-    Fret.beacon = function()
+    Fret.flashing = function()
       util.beacon(ns, beacon.hl, beacon.blend, beacon.decay)
     end
   end

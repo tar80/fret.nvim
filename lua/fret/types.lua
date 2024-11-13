@@ -11,6 +11,7 @@
 ---@field fret_enable_kana boolean
 ---@field fret_enable_symbol boolean
 ---@field fret_repeat_notify boolean
+---@field fret_smart_fold boolean
 ---@field fret_hlmode string
 ---@field fret_beacon string
 ---@field beacon_opts {hl:string,blend:integer,decay:integer}
@@ -29,6 +30,7 @@
 ---@field notify boolean
 ---@field enable_kana boolean
 ---@field enable_symbol boolean
+---@field enable_fold boolean
 ---@field timeout integer
 ---@field vcount integer
 ---@field mapkey string
@@ -42,6 +44,7 @@
 ---@field info_width integer
 ---@field line string
 ---@field keys Keys
+---@field is_fold true?
 ---@field hints? table<integer,HintDetails>
 ---@field dotrepeat? string
 
@@ -56,7 +59,7 @@
 ---@class Fret
 ---@field public mapped_trigger boolean?
 ---@field public altkeys {[AltKeys]:string}
----@field public beacon fun():nil
+---@field public flashing fun():nil
 ---@field public inst fun(self:self,mapkey:string,direction:Direction,till:integer):nil
 ---@field public playing fun(mapkey:string,direction:Direction,till:integer):nil
 ---@field public performing fun():nil

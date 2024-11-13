@@ -45,7 +45,9 @@ local ns = setmetatable({}, {
     close_floatwin = function(self)
       if #self.floatwin_ids > 0 then
         for _, bufnr in ipairs(self.floatwin_ids) do
-          vim.api.nvim_buf_delete(bufnr, { force = true })
+          if vim.api.nvim_buf_is_valid(bufnr) then
+            vim.api.nvim_buf_delete(bufnr, { force = true })
+          end
         end
       end
     end,

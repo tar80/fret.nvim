@@ -30,11 +30,12 @@ function M.set_options(opts)
   vim.validate('fret_enable_kana', opts.fret_enable_kana, 'boolean', true)
   vim.validate('fret_enable_symbol', opts.fret_enable_symbol, 'boolean', true)
   vim.validate('fret_repeat_notify', opts.fret_repeat_notify, 'boolean', true)
+  vim.validate('fret_smart_fold', opts.fret_smart_fold, 'boolean', true)
   vim.validate('fret_hlmode', opts.fret_hlmode, 'string', true)
   vim.validate('fret_beacon', opts.fret_beacon, 'boolean', true)
   vim.validate('beacon_opts', opts.beacon_opts, 'table', true)
   vim.validate('altkeys', opts.altkeys, 'table', true)
-  vim.validate('mapkeys', opts.mapkeys, 'table')
+  vim.validate('mapkeys', opts.mapkeys, 'table', false)
   if opts.fret_enable_kana then
     vim.g.fret_enable_kana = opts.fret_enable_kana
   end
@@ -50,8 +51,8 @@ function M.set_options(opts)
   if opts.fret_beacon then
     vim.g.fret_beacon = opts.fret_beacon
   end
-  if opts.fret_timeout then
-    vim.g.fret_timeout = opts.fret_timeout
+  if opts.fret_smart_fold then
+    vim.g.fret_smart_fold = opts.fret_smart_fold
   end
   if opts.mapkeys then
     for k, v in pairs(_default_keys) do
@@ -61,9 +62,10 @@ function M.set_options(opts)
       end
     end
   end
+  vim.g.fret_timeout = opts.fret_timeout or 0
   return {
     altkeys = opts.altkeys or {},
-    beacon = opts.beacon_opts or {}
+    beacon = opts.beacon_opts or {},
   }
 end
 

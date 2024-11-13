@@ -31,7 +31,6 @@ local hl_detail = {
 }
 local augroup = vim.api.nvim_create_augroup(UNIQ_ID, { clear = true })
 
-vim.g.fret_timeout = 0
 _G._fret_highlights = {
   [0] = HLGROUP.ignore,
   [1] = HLGROUP.first,
@@ -41,10 +40,8 @@ _G._fret_highlights = {
   [5] = HLGROUP.hint,
 }
 
-local rgx = vim.regex('^dark\\|light$')
 local function set_hl()
-  local bg = vim.go.background
-  local hl = hl_detail[rgx:match_str(bg) and bg or 'dark']
+  local hl = hl_detail[vim.go.background]
   local iter = vim.iter(hl)
   iter:each(function(v)
     vim.api.nvim_set_hl(0, v, hl[v])
