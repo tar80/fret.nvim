@@ -1,33 +1,28 @@
 ---@class Fret
 local Fret = {}
 
----@module 'util'
-local util = setmetatable({}, {
-  __index = function(t, k)
-    t = package.loaded['matchwith.util'] or require('fret.util')
-    return t[k]
-  end,
-})
 local tbl = require('fret.tbl')
 local api = vim.api
 local fn = vim.fn
+---@module 'util'
+local util = setmetatable({}, {
+  __index = function(mod, key)
+    mod = package.loaded['matchwith.util'] or require('fret.util')
+    return mod[key]
+  end,
+})
+-- util module hub
+function Fret.util_call()
+  return util
+end
 
-local UNIQ_ID = 'fret-nvim'
-local L_SHIFT = 'JKLUIOPNMHY'
-local R_SHIFT = 'FDSAREWQVCXZGTB'
-local BEACON = {
-  hl = 'FretAlternative',
-  blend = 30,
-  decay = 15,
-}
+local UNIQUE_ID = 'fret-nvim'
 
-local ns = api.nvim_create_namespace(UNIQ_ID)
-local timer = util.set_timer()
-local hlgroup = _G._fret_highlights
-_G._fret_highlights = nil
-
-Fret.altkeys = {}
+Fret.ns = api.nvim_create_namespace(UNIQUE_ID)
+Fret.timer = util.set_timer()
 Fret.mapped_trigger = false
+Fret.altkeys = {}
+Fret.hlgroup = {}
 
 -- Clean up the keys database
 local function _newkeys()
@@ -45,9 +40,6 @@ function _session.new(mapkey, direction, till)
   local winid = api.nvim_get_current_win()
   local pos = api.nvim_win_get_cursor(winid)
   local self = {
-    ns = ns,
-    timer = timer,
-    hlgroup = hlgroup,
     bufnr = api.nvim_get_current_buf(),
     winid = winid,
     cur_row = pos[1],
@@ -383,12 +375,12 @@ end
 
 -- Process for key input
 function _session.key_in(self)
-  self.timer.debounce(vim.g.fret_timeout, function()
+  Fret.timer.debounce(vim.g.fret_timeout, function()
     api.nvim_input('<Esc>')
     _fold_close(self.is_fold)
   end)
   local input = fn.nr2char(fn.getchar())
-  api.nvim_buf_clear_namespace(self.bufnr, self.ns, self.cur_row - 1, self.cur_row)
+  api.nvim_buf_clear_namespace(self.bufnr, Fret.ns, self.cur_row - 1, self.cur_row)
   if input:match('%C') then
     return input
   end
@@ -424,14 +416,14 @@ function _session.operable(self, count)
   end
   if self.notify and self.operative then
     local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, char)
-    util.notify(UNIQ_ID, msg, vim.log.levels.INFO, { title = UNIQ_ID })
+    util.notify(UNIQUE_ID, msg, vim.log.levels.INFO)
   end
   return keystroke
 end
 
 -- Finish of key operation
 function _session.finish(self)
-  self.timer.stop()
+  Fret.timer.stop()
   ---@class Session
   Session = { dotrepeat = self.dotrepeat, keys = _newkeys() }
 end
@@ -477,18 +469,18 @@ function _session.get_markers(self, callback)
   local markers = {}
   local forward = function(v)
     local hint = self.hints[v.byteidx]
-    util.tbl_insert(markers, v.start_at, 1, { callback(v, count), self.hlgroup[v.level] })
+    util.tbl_insert(markers, v.start_at, 1, { callback(v, count), Fret.hlgroup[v.level] })
     if hint then
-      util.tbl_insert(markers, v.start_at, 1, { hint.actual, self.hlgroup[hint.level] })
+      util.tbl_insert(markers, v.start_at, 1, { hint.actual, Fret.hlgroup[hint.level] })
     end
     count = count + 1
   end
   local backward = function(v)
     local hint = self.hints[v.byteidx]
     if hint then
-      util.tbl_insert(markers, v.start_at, { hint.actual, self.hlgroup[hint.level] })
+      util.tbl_insert(markers, v.start_at, { hint.actual, Fret.hlgroup[hint.level] })
     end
-    util.tbl_insert(markers, v.start_at, { callback(v, count), self.hlgroup[v.level] })
+    util.tbl_insert(markers, v.start_at, { callback(v, count), Fret.hlgroup[v.level] })
     count = count + 1
   end
   local iter = vim.iter(self.keys.detail)
@@ -536,7 +528,7 @@ function _session.attach_extmark(self, input, lower)
   local markers = self:create_line_marker(width, input, lower)
   if not input or (vim.tbl_count(self.keys.first_idx) > 1) then
     for line_idx, marker_text in pairs(markers) do
-      api.nvim_buf_set_extmark(self.bufnr, self.ns, row, self.keys.mark_pos[line_idx], {
+      api.nvim_buf_set_extmark(self.bufnr, Fret.ns, row, self.keys.mark_pos[line_idx], {
         end_col = width,
         virt_text = marker_text,
         virt_text_pos = 'overlay',
@@ -557,7 +549,7 @@ function _session.related(self, input, lower)
   elseif match_item == 1 then
     self:operable(self.keys.first_idx[input])
   else
-    vim.cmd(string.format('lua require("fret"):performing()'))
+    vim.cmd('lua require("fret"):performing()')
   end
 end
 
@@ -648,19 +640,28 @@ function Fret.dotrepeat()
 end
 
 function Fret.setup(opts)
-  local defaults = require('fret.config').set_options(opts)
-  if not defaults then
-    util.notify(UNIQ_ID, 'Error: Requires arguments', vim.log.levels.ERROR, { title = UNIQ_ID })
-  else
-    Fret.altkeys.lshift = (defaults.altkeys.lshift or L_SHIFT):upper()
-    Fret.altkeys.rshift = (defaults.altkeys.rshift or R_SHIFT):upper()
-    Fret.altkeys = vim.tbl_extend('force', Fret.altkeys, defaults.altkeys)
-    local beacon = vim.tbl_extend('force', BEACON, defaults.beacon)
-    Fret.flashing = function()
-      util.beacon(ns, beacon.hl, beacon.blend, beacon.decay)
-    end
+  local conf = require('fret.config').set_options(opts)
+  if not conf then
+    util.notify(UNIQUE_ID, 'Error: Requires arguments', vim.log.levels.ERROR)
+    return
   end
-  return defaults
+
+  Fret.altkeys.lshift = conf.altkeys.lshift
+  Fret.altkeys.rshift = conf.altkeys.rshift
+  Fret.hlgroup = conf.hlgroup
+  Fret.flashing = function()
+    util.beacon(conf.beacon.hl, conf.beacon.blend, conf.beacon.decay)
+  end
+
+  local augroup = api.nvim_create_augroup(UNIQUE_ID, { clear = true })
+  util.set_hl(conf.hl_detail[vim.go.background])
+  util.autocmd({ 'ColorScheme' }, {
+    desc = 'Fret reset highlights',
+    group = augroup,
+    callback = function()
+      util.set_hl(conf.hl_detail[vim.go.background])
+    end,
+  }, true)
 end
 
 return Fret

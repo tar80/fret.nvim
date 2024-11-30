@@ -19,9 +19,6 @@
 ---@field mapkeys table<MapKeys,string>
 
 ---@class Instance
----@field ns integer
----@field timer Timer
----@field hlgroup table<Hlgroup,string>
 ---@field bufnr integer
 ---@field winid integer
 ---@field conceallevel integer
@@ -58,13 +55,16 @@
 
 ---@class Fret
 ---@field public mapped_trigger boolean?
----@field public altkeys {[AltKeys]:string}
----@field public flashing fun():nil
----@field public inst fun(self:self,mapkey:string,direction:Direction,till:integer):nil
----@field public playing fun(mapkey:string,direction:Direction,till:integer):nil
----@field public performing fun():nil
----@field public dotrepeat fun():nil
----@field public setup fun(opts:Options):table?
+---@field public altkeys table<AltKeys,string>
+---@field public ns integer
+---@field public timer Timer
+---@field public hlgroup table<integer,string>
+---@field public post_process fun()
+---@field public inst fun(self:self,mapkey:string,direction:Direction,till:integer)
+---@field public playing fun(mapkey:string,direction:Direction,till:integer)
+---@field public performing fun()
+---@field public dotrepeat fun()
+---@field public setup fun(opts:Options)
 
 ---@class Session:Instance
 ---@field new fun(mapkey:string,direction:Direction,till:integer):Session
@@ -74,11 +74,11 @@
 ---@field get_inlay_hints fun(self:self,width:integer):table<integer,HintDetails>?
 ---@field get_keys fun(self:self,indices:string):string
 ---@field key_in fun(self:self):string?
----@field repeatable fun(self:self,count:integer):nil
+---@field repeatable fun(self:self,count:integer)
 ---@field operable fun(self:self,conut:integer):string
----@field finish fun(self:self):nil
+---@field finish fun(self:self)
 ---@field get_markers fun(self:self,callback:fun(v:Details,count:integer):string):CharHighlight[]
 ---@field create_line_marker fun(self:self,width:integer,input:string,lower:string):CharHighlight[]
----@field attach_extmark fun(self:self,input?:string,lower?:string):nil
----@field related fun(self:self,input:string,lower:string):nil
----@field gain fun(self:self,input:string):nil
+---@field attach_extmark fun(self:self,input?:string,lower?:string)
+---@field related fun(self:self,input:string,lower:string)
+---@field gain fun(self:self,input:string)

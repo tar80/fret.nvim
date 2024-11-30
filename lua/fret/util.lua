@@ -9,10 +9,8 @@ local M = {}
 ---@param name string
 ---@param message string
 ---@param errorlevel integer
----@param options? table
-function M.notify(name, message, errorlevel, options)
-  options = options or {}
-  vim.notify(string.format('[%s] %s', name, message), errorlevel, options)
+function M.notify(name, message, errorlevel)
+  vim.notify(string.format('[%s] %s', name, message), errorlevel, { title = name })
 end
 
 ---@param name string
@@ -40,9 +38,9 @@ function M.charwidth(string, column)
   return api.nvim_strwidth(fn.strcharpart(string, column, 1))
 end
 
--- Expand wrapping symbols
+-- Expand listchar symbols
 ---@return integer extends,integer precedes
-function M.expand_wrap_symbols()
+function M.expand_listchars()
   local listchars = vim.opt.listchars:get()
   local extends = listchars.extends and 1 or 0
   local precedes = listchars.precedes and 1 or 0
@@ -87,6 +85,16 @@ function M.tbl_insert(tbl, key, ...)
   table.insert(tbl[key], pos, value)
 end
 
+-- Set default highlights
+---@param highlights table<string,vim.api.keyset.highlight>
+function M.set_hl(highlights)
+  vim.iter(highlights):each(function(name, value)
+    local hl = type(value) == 'function' and value() or value
+    hl['default'] = true
+    vim.api.nvim_set_hl(0, name, hl)
+  end)
+end
+
 ---@param name string|string[]
 ---@param opts vim.api.keyset.create_autocmd
 ---@param safestate? boolean
@@ -106,11 +114,12 @@ end
 ---@class Timer
 ---@field private timer uv.uv_timer_t
 ---@field private running boolean
----@field public debounce fun(timeout:integer,callback:fun()): nil
----@field public stop fun(): nil
----@field public close fun(): nil
+---@field public debounce fun(timeout:integer,callback:fun())
+---@field public once fun(timeout:integer,callback:fun())
+---@field public stop fun()
+---@field public close fun()
 ---@field public _closing fun(): boolean
----@field public flash fun(timeout:integer,winid:integer,blend:integer,decay:integer): nil
+---@field public flash fun(timeout:integer,winid:integer,blend:integer,decay:integer)
 
 ---@return Timer
 function M.set_timer()
@@ -127,6 +136,12 @@ function M.set_timer()
         timer:start(timeout, 0, function()
           vim.schedule(callback)
           running = false
+        end)
+      end,
+      start = function(timeout, callback)
+        timer:start(timeout, 0, function()
+          timer:stop()
+          vim.schedule(callback)
         end)
       end,
       stop = function()
@@ -161,7 +176,7 @@ function M.set_timer()
               api.nvim_set_option_value('winblend', blending, { win = winid })
               if api.nvim_get_option_value('winblend', { win = winid }) == 100 and timer:is_active() then
                 timer:stop()
-                timer:close()
+                running = false
                 api.nvim_win_close(winid, true)
               end
             end)
@@ -219,12 +234,22 @@ function M.ext_sign(ns, row, col, opts)
   api.nvim_buf_set_extmark(0, ns, row, col, opts)
 end
 
+---@type Timer
+local _timer
+local function _flash_timer()
+  if not _timer then
+    _timer = M.set_timer()
+  end
+  return _timer
+end
+
 -- Flash pair marker
----@param ns integer
 ---@param hl string Highlight name
----@param blend integer Initial value of winblend
----@param decay integer winblend becay
-function M.beacon(ns, hl, blend, decay)
+---@param blend? integer Initial value of winblend
+---@param decay? integer winblend becay
+function M.beacon(hl, blend, decay)
+  blend = blend or 0
+  decay = decay or 10
   vim.defer_fn(function()
     local line = api.nvim_get_current_line()
     local _, col = unpack(api.nvim_win_get_cursor(0))
@@ -233,17 +258,16 @@ function M.beacon(ns, hl, blend, decay)
     local next_charwidth = math.min(2, #vim.fn.strcharpart(line, charidx + 1, 1, true))
     local width = next_charwidth == 0 and charwidth * 3 or charwidth * 2 + next_charwidth
     local opts = vim.tbl_extend('force', float_options, {
-      width = width,
+      width = math.max(1, width),
       row = vim.fn.winline() - 1,
       col = vim.fn.wincol() - 1 - charwidth,
     })
     local bufnr = api.nvim_create_buf(false, true)
     local winid = api.nvim_open_win(bufnr, false, opts)
-    api.nvim_win_set_hl_ns(winid, ns)
-    vim.wo[winid].winhl = ('Normal:%s'):format(hl)
+    api.nvim_set_option_value('winhighlight', ('Normal:%s'):format(hl), { win = winid })
     api.nvim_set_option_value('winblend', blend, { win = winid })
-    local timer = M.set_timer()
-    timer.flash(80, winid, blend, decay)
+    local timer = _flash_timer()
+    timer.flash(100, winid, blend, decay)
   end, 0)
 end
 

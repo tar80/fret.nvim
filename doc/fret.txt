@@ -136,7 +136,7 @@ g:fret_beacon                                                  *g:fret_beacon*
 ------------------------------------------------------------------------------
 CONFIGURATION                                             *fret-configuration*
 
-*fret.nvim* does not provide <Plug> keys.
+|fret.nvim| does not provide <Plug> keys.
 It automatically registers keymaps from the |fret-mapkeys| values.
 
 Default settings ~
@@ -198,7 +198,7 @@ HIGHLIGHT                                                     *fret-highlight*
 
 *FretIgnore*
 
-        Used for characters not covered by *fret.nvim*
+        Used for characters not covered by |fret.nvim|
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:fen:fdl=0:fdm=marker:
