@@ -52,12 +52,12 @@ For specification reasons, it cannot be used in conjunction with the beacon func
 require('fret.config').setup({
   fret_timeout = 0,
   fret_samekey_timeout = 0,
+  fret_enable_beacon = false,
   fret_enable_kana = false,
   fret_enable_symbol = false,
   fret_repeat_notify = false,
   fret_smart_fold = false,
   fret_hlmode = 'replace',
-  fret_beacon = false,
   beacon_opts = {
     hl = 'FretAlternative',
     interval = 80,
