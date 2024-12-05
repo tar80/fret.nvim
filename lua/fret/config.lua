@@ -12,8 +12,9 @@ local KEYS = {
 }
 local BEACON = {
   hl = 'FretAlternative',
-  blend = 30,
-  decay = 15,
+  interval = 80,
+  blend = 20,
+  decay = 10,
 }
 local HLGROUP = {
   ignore = 'FretIgnore',
@@ -49,16 +50,23 @@ local hl_detail = {
 }
 
 -- Register a fret operation key
----@param mapkey string
----@param direction Direction
----@param till integer
-local function register_keymap(mapkey, direction, till)
-  local desc = string.format('Fret %s jump', direction)
-  local cmd = string.format('<Cmd>lua require("fret"):inst("%s", "%s", %s)<CR>', mapkey, direction, till)
-  vim.keymap.set({ 'n', 'x', 'o' }, mapkey, function()
-    require('fret').mapped_trigger = true
-    return cmd
-  end, { expr = true, desc = desc })
+---@param mapkeys table<MapKeys,string>
+local function register_keymap(mapkeys)
+  for k, v in pairs(KEYS) do
+    local mapkey = mapkeys[k] or ''
+    if #mapkey == 1 then
+      local cmd = string.format('<Cmd>lua require("fret"):inst("%s", "%s", %s)<CR>', mapkey, v.direction, v.till)
+      local desc = string.format('Fret %s jump', v.direction)
+      vim.keymap.set({ 'n', 'x', 'o' }, mapkey, function()
+        require('fret').mapped_trigger = true
+        return cmd
+      end, { expr = true, desc = desc })
+    end
+  end
+  vim.keymap.set({ 'n', 'x' }, '<Plug>(fret-cue)', function()
+    require('fret').same_key_repeat()
+  end, { desc = 'Fret same-key-repeat' })
+  vim.keymap.set({ 'n', 'x' }, '<Plug>(fret-cue)<Nul>', '<Nop>', { desc = 'Fret dummy map for same-key-repeat' })
 end
 
 function M.set_options(opts)
@@ -66,53 +74,43 @@ function M.set_options(opts)
     return
   end
   vim.validate('fret_timeout', opts.fret_timeout, 'number', true)
+  vim.validate('fret_samekey_timeout', opts.fret_samekey_timeout, 'number', true)
+  vim.validate('fret_enable_beacon', opts.fret_enable_beacon, 'boolean', true)
   vim.validate('fret_enable_kana', opts.fret_enable_kana, 'boolean', true)
   vim.validate('fret_enable_symbol', opts.fret_enable_symbol, 'boolean', true)
   vim.validate('fret_repeat_notify', opts.fret_repeat_notify, 'boolean', true)
   vim.validate('fret_smart_fold', opts.fret_smart_fold, 'boolean', true)
   vim.validate('fret_hlmode', opts.fret_hlmode, 'string', true)
-  vim.validate('fret_beacon', opts.fret_beacon, 'boolean', true)
   vim.validate('beacon_opts', opts.beacon_opts, 'table', true)
   vim.validate('altkeys', opts.altkeys, 'table', true)
   vim.validate('mapkeys', opts.mapkeys, 'table', false)
 
-  if opts.fret_enable_kana then
-    vim.g.fret_enable_kana = opts.fret_enable_kana
-  end
-  if opts.fret_enable_symbol then
-    vim.g.fret_enable_symbol = opts.fret_enable_symbol
-  end
-  if opts.fret_repeat_notify then
-    vim.g.fret_repeat_notify = opts.fret_repeat_notify
-  end
-  if opts.fret_hlmode then
-    vim.g.fret_hlmode = opts.fret_hlmode
-  end
-  if opts.fret_beacon then
-    vim.g.fret_beacon = opts.fret_beacon
-  end
-  if opts.fret_smart_fold then
-    vim.g.fret_smart_fold = opts.fret_smart_fold
-  end
-  if opts.mapkeys then
-    for k, v in pairs(KEYS) do
-      local mapkey = opts.mapkeys[k] or ''
-      if #mapkey == 1 then
-        register_keymap(mapkey, v.direction, v.till)
-      end
-    end
-  end
+  vim.g.fret_enable_beacon = opts.fret_enable_beacon
+  vim.g.fret_enable_kana = opts.fret_enable_kana
+  vim.g.fret_enable_symbol = opts.fret_enable_symbol
+  vim.g.fret_repeat_notify = opts.fret_repeat_notify
+  vim.g.fret_hlmode = opts.fret_hlmode
+  vim.g.fret_smart_fold = opts.fret_smart_fold
   vim.g.fret_timeout = opts.fret_timeout or 0
+  vim.g.fret_samekey_timeout = opts.fret_samekey_timeout or 0
+  if opts.mapkeys then
+    register_keymap(opts.mapkeys)
+  end
 
-  local altkeys = {
+  -- notify deprecated options
+  if opts.fret_beacon then
+    vim.deprecate('fret_beacon', 'fret_enable_beacon', 'recently', 'Fret', false)
+  end
+
+  local _altkeys = {
     lshift = (opts.altkeys and opts.altkeys.lshift or L_SHIFT):upper(),
     rshift = (opts.altkeys and opts.altkeys.rshift or R_SHIFT):upper(),
   }
-  local beacon = vim.tbl_extend('force', BEACON, opts.beacon_opts or {})
+  local _beacon = vim.tbl_extend('force', BEACON, opts.beacon_opts or {})
 
   return {
-    altkeys = altkeys,
-    beacon = beacon,
+    altkeys = _altkeys,
+    beacon = _beacon,
     hlgroup = hlgroup,
     hl_detail = hl_detail,
   }

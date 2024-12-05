@@ -1,20 +1,24 @@
 ---@alias AltKeys 'lshift'|'rshift'
+---@alias Beacon {hl:string,interval:integer,blend:integer,decay:integer}
 ---@alias MapKeys 'fret_f'|'fret_F'|'fret_t'|'fret_T'
 ---@alias Direction 'forward'|'backward'
 ---@alias Hlgroup 'FretCandidateFirst'|'FretCandidateSecond'|'FretCandidateSub'|'FretAlternative'|'FretIgnore'
----@alias CharHighlight {[integer]:string,[integer]:Hlgroup}
----@alias Details {actual:string,char:string,altchar:string,level:integer,double:boolean,byteidx:integer,start_at:integer}
+---@alias ChrHighlight {[integer]:string,[integer]:Hlgroup}
+---@alias Detail {actual:string,chr:string,altchr:string,level:integer,double:boolean,byteidx:integer,start_at:integer}
 ---@alias HintDetails {actual:string,level:integer,bytes:integer}
+---@alias Details {[integer]: Detail}
 
 ---@class Options
 ---@field fret_timeout integer
+---@field fret_samekey_timeout integer
+---@field fret_beacon boolean @deprecated
+---@field fret_enable_beacon boolean
 ---@field fret_enable_kana boolean
 ---@field fret_enable_symbol boolean
 ---@field fret_repeat_notify boolean
 ---@field fret_smart_fold boolean
 ---@field fret_hlmode string
----@field fret_beacon string
----@field beacon_opts {hl:string,blend:integer,decay:integer}
+---@field beacon_opts {hl:string,interval:integer,blend:integer,decay:integer}
 ---@field altkeys table<AltKeys,string>
 ---@field mapkeys table<MapKeys,string>
 
@@ -23,12 +27,13 @@
 ---@field winid integer
 ---@field conceallevel integer
 ---@field hlmode string
----@field beacon boolean
 ---@field notify boolean
 ---@field enable_kana boolean
 ---@field enable_symbol boolean
 ---@field enable_fold boolean
+---@field enable_beacon boolean
 ---@field timeout integer
+---@field samekey_timeout integer
 ---@field vcount integer
 ---@field mapkey string
 ---@field reversive boolean
@@ -42,8 +47,10 @@
 ---@field line string
 ---@field keys Keys
 ---@field is_fold true?
+---@field ignore_extmark true?
 ---@field hints? table<integer,HintDetails>
 ---@field dotrepeat? string
+---@field last_chr string
 
 ---@class Keys
 ---@field level table<string,integer>
@@ -56,6 +63,7 @@
 ---@class Fret
 ---@field public mapped_trigger boolean?
 ---@field public altkeys table<AltKeys,string>
+---@field public beacon Beacon
 ---@field public ns integer
 ---@field public timer Timer
 ---@field public hlgroup table<integer,string>
@@ -70,15 +78,19 @@
 ---@field new fun(mapkey:string,direction:Direction,till:integer):Session
 ---@field set_line_informations fun(self:self):string?
 ---@field start_at_extmark fun(self:self,indices:string):fun(integer):integer
----@field store_key fun(self:self,char:string,idx:integer,byteidx:integer,start_at:integer,kana:boolean)
+---@field store_key fun(self:self,chr:string,idx:integer,byteidx:integer,start_at:integer,kana:boolean)
 ---@field get_inlay_hints fun(self:self,width:integer):table<integer,HintDetails>?
 ---@field get_keys fun(self:self,indices:string):string
 ---@field key_in fun(self:self):string?
 ---@field repeatable fun(self:self,count:integer)
 ---@field operable fun(self:self,conut:integer):string
 ---@field finish fun(self:self)
----@field get_markers fun(self:self,callback:fun(v:Details,count:integer):string):CharHighlight[]
----@field create_line_marker fun(self:self,width:integer,input:string,lower:string):CharHighlight[]
+---@field get_markers fun(self:self,callback:fun(v:Details,count:integer):string):ChrHighlight[]
+---@field create_line_marker fun(self:self,width:integer,input:string,lower:string):ChrHighlight[]
 ---@field attach_extmark fun(self:self,input?:string,lower?:string)
 ---@field related fun(self:self,input:string,lower:string)
 ---@field gain fun(self:self,input:string)
+---@field dotrepeat string
+---@field lastmap string
+---@field lastchr string
+---@field keys Keys

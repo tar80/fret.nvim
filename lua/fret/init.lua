@@ -22,6 +22,7 @@ Fret.ns = api.nvim_create_namespace(UNIQUE_ID)
 Fret.timer = util.set_timer()
 Fret.mapped_trigger = false
 Fret.altkeys = {}
+Fret.beacon = {}
 Fret.hlgroup = {}
 
 -- Clean up the keys database
@@ -46,12 +47,13 @@ function _session.new(mapkey, direction, till)
     cur_col = pos[2],
     conceallevel = vim.wo.conceallevel,
     hlmode = vim.g.fret_hlmode,
-    beacon = vim.g.fret_beacon,
     notify = vim.g.fret_repeat_notify,
+    enable_beacon = vim.g.fret_enable_beacon,
     enable_kana = vim.g.fret_enable_kana,
     enable_symbol = vim.g.fret_enable_symbol,
     enable_fold = vim.g.fret_smart_fold,
     timeout = vim.g.fret_timeout,
+    samekey_timeout = vim.g.fret_samekey_timeout,
     vcount = vim.v.count1,
     mapkey = mapkey,
     reversive = direction == 'forward',
@@ -60,6 +62,11 @@ function _session.new(mapkey, direction, till)
     front_byteidx = 0,
     keys = _newkeys(),
   }
+  if vim.b.fret_session_repeat then
+    vim.b.fret_session_repeat = false
+    self.enable_symbol = false
+    self.ignore_extmark = true
+  end
   return setmetatable(self, { __index = _session })
 end
 
@@ -125,12 +132,12 @@ function _session.set_line_informations(self)
 end
 
 -- Convert a character to a valid key
----@param char string
+---@param chr string
 ---@param name string Table name in string array
 ---@return string?
-local function _valid_key(char, name)
+local function _valid_key(chr, name)
   for k, v in pairs(tbl[name]) do
-    if v:find(char, 1, true) then
+    if v:find(chr, 1, true) then
       return k
     end
   end
@@ -141,25 +148,25 @@ end
 ---@param enable_kana boolean
 ---@return string?,string,string?,string?,boolean?
 local function _matcher(actual, enable_kana)
-  local match, char, altchar, double
+  local match, chr, altchr, double
   if actual:match('%C') then
     match = actual:match('[%w%p%s]')
     if match then
-      char = actual:lower()
+      chr = actual:lower()
     elseif enable_kana then
       match = actual:match('[^%g%s]')
       if match then
-        char = _valid_key(actual, 'kana')
-        if char then
+        chr = _valid_key(actual, 'kana')
+        if chr then
           double = not tbl.hankanalist:find(actual, 1, true)
-          altchar = tbl.altchar[char]
+          altchr = tbl.altchar[chr]
         else
           match = false
         end
       end
     end
   end
-  return match, actual, char, altchar, double
+  return match, actual, chr, altchr, double
 end
 
 -- Returns a function that extracts the first column of a wrapped line
@@ -203,7 +210,7 @@ end
 
 -- Store key information in Session.keys
 function _session.store_key(self, actual, idx, byteidx, start_at, kana)
-  local match, char, altchar, double
+  local match, chr, altchr, double
   local level = 0
   if idx > self.till then
     local vcount = self.keys.ignore[actual] or self.vcount
@@ -211,51 +218,51 @@ function _session.store_key(self, actual, idx, byteidx, start_at, kana)
       vcount = vcount - 1
       self.keys.ignore[actual] = vcount
     end
-    match, actual, char, altchar, double = _matcher(actual, kana)
+    match, actual, chr, altchr, double = _matcher(actual, kana)
     if match and (vcount < 1) then
-      ---@cast char -?
-      level = self.keys.level[char] and (self.keys.level[char] + 1) or 1
-      self.keys.level[char] = math.min(2, level)
+      ---@cast chr -?
+      level = self.keys.level[chr] and (self.keys.level[chr] + 1) or 1
+      self.keys.level[chr] = math.min(2, level)
     end
   end
-  if not char then
+  if not chr then
     level = 0
   elseif level == 1 then
-    self.keys.first_idx[char] = idx
+    self.keys.first_idx[chr] = idx
     -- Add a key with a list containing the same vowel to the target
-    if altchar and not self.keys.first_idx[altchar] then
-      self.keys.first_idx[altchar] = idx
+    if altchr and not self.keys.first_idx[altchr] then
+      self.keys.first_idx[altchr] = idx
     end
-  elseif char:match('[%d%p%s]') then
+  elseif chr:match('[%d%p%s]') then
     if self.enable_symbol and level > 1 then
       level = 3
-      local first = self.keys.first_idx[char]
+      local first = self.keys.first_idx[chr]
       if first then
         self.keys.detail[first].level = level
-        self.keys.first_idx[char] = nil
+        self.keys.first_idx[chr] = nil
       end
     else
       level = 0
     end
   elseif level == 2 then
-    self.keys.second_idx[char] = idx
-    if altchar and not self.keys.second_idx[altchar] then
-      self.keys.second_idx[altchar] = idx
+    self.keys.second_idx[chr] = idx
+    if altchr and not self.keys.second_idx[altchr] then
+      self.keys.second_idx[altchr] = idx
     end
   elseif level == 3 then
-    local second = self.keys.second_idx[char]
+    local second = self.keys.second_idx[chr]
     if second then
       self.keys.detail[second].level = 3
-      self.keys.second_idx[char] = nil
-      if altchar then
-        self.keys.second_idx[altchar] = nil
+      self.keys.second_idx[chr] = nil
+      if altchr then
+        self.keys.second_idx[altchr] = nil
       end
     end
   end
   table.insert(self.keys.detail, {
     actual = actual,
-    char = char,
-    altchar = altchar,
+    chr = chr,
+    altchr = altchr,
     level = level,
     double = double,
     byteidx = byteidx,
@@ -340,7 +347,7 @@ end
 -- Obtaining and setting key information
 function _session.get_keys(self, indices)
   local new_indices = ''
-  local char, bytes
+  local chr, bytes
   local pos = vim.str_utf_pos(indices)
   if self.reversive then
     table.sort(pos, function(x, y)
@@ -362,9 +369,9 @@ function _session.get_keys(self, indices)
     end
     idx = idx - skip_idx
     bytes = byteidx + vim.str_utf_end(indices, byteidx)
-    char = indices:sub(byteidx, bytes)
-    self:store_key(char, idx, byteidx, start_at(byteidx), self.enable_kana)
-    new_indices = string.format('%s%s', new_indices, char)
+    chr = indices:sub(byteidx, bytes)
+    self:store_key(chr, idx, byteidx, start_at(byteidx), self.enable_kana)
+    new_indices = string.format('%s%s', new_indices, chr)
     i = i + 1
     if i > limit then
       iter:last()
@@ -394,28 +401,28 @@ function _session.repeatable(self, count)
   end
   local keystroke = string.format('%s%s%s%s', till, self.vcount, self.mapkey, self.keys.detail[count].actual)
   vim.cmd.normal({ keystroke, bang = true })
-  if self.beacon and not self.operative then
-    Fret.flashing()
+  if not self.operative then
+    self:post_process(count)
   end
 end
 
 -- Operable key handring
 function _session.operable(self, count)
-  local char = self.keys.detail[count].actual
+  local chr = self.keys.detail[count].actual
   local line = self.line
-  local vcount = fn.count(fn.strcharpart(line, 0, count), char)
+  local vcount = fn.count(fn.strcharpart(line, 0, count), chr)
   local select = ''
   if self.operative then
     select = self.reversive and 'hv' or 'v'
   end
   local operator = vim.v.operator
-  local keystroke = string.format('%s%s%s%s', select, vcount, self.mapkey, char)
+  local keystroke = string.format('%s%s%s%s', select, vcount, self.mapkey, chr)
   vim.cmd.normal({ keystroke, bang = true })
-  if self.beacon and not self.operative then
-    Fret.flashing()
+  if not self.operative then
+    self:post_process(count)
   end
   if self.notify and self.operative then
-    local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, char)
+    local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, chr)
     util.notify(UNIQUE_ID, msg, vim.log.levels.INFO)
   end
   return keystroke
@@ -425,7 +432,22 @@ end
 function _session.finish(self)
   Fret.timer.stop()
   ---@class Session
-  Session = { dotrepeat = self.dotrepeat, keys = _newkeys() }
+  Session = { dotrepeat = self.dotrepeat, lastmap = self.mapkey, lastchr = self.last_chr, keys = _newkeys() }
+end
+
+function _session.post_process(self, count)
+  if self.samekey_timeout > 0 then
+    self.last_chr = self.keys.detail[count].chr
+    vim.api.nvim_input('<Plug>(fret-cue)')
+  elseif self.enable_beacon then
+    require('fret.beacon').flash_cursor(
+      self.winid,
+      Fret.beacon.hl,
+      Fret.beacon.interval,
+      Fret.beacon.blend,
+      Fret.beacon.decay
+    )
+  end
 end
 
 -- Adjust marker letter width
@@ -437,29 +459,29 @@ local function _adjust_marker_width(double, marker)
 end
 
 -- Map marks for related-mode
----@param char? string
+---@param chr? string
 ---@return Iter?
-local function _iter_marks(char)
-  if not char then
+local function _iter_marks(chr)
+  if not chr then
     return
   end
   local r_symbol = '123456!"#$%&'
   local lower_symbol = [=[1234567890-^\@[;:],./\ ]=]
   local main, sub = Fret.altkeys.lshift, Fret.altkeys.rshift
   local rkeys = string.format('%s%s', sub, r_symbol)
-  if rkeys:find(char, 1, true) then
+  if rkeys:find(chr, 1, true) then
     main, sub = sub, main
   end
   local s = string.format('%s%s', main, sub)
-  if lower_symbol:find(char, 1, true) then
+  if lower_symbol:find(chr, 1, true) then
     s = s:lower()
   end
-  local int = s:find(char, 1, true)
+  local int = s:find(chr, 1, true)
   local t = vim.split(s, '', { plain = true })
   if int then
     table.remove(t, int)
   end
-  table.insert(t, 1, char)
+  table.insert(t, 1, chr)
   return vim.iter(ipairs(t))
 end
 
@@ -497,9 +519,9 @@ function _session.create_line_marker(self, width, input, lower)
     if v.level == 0 then
       mark = v.actual
     elseif v.level == 1 then
-      mark = _adjust_marker_width(v.double, v.char)
+      mark = _adjust_marker_width(v.double, v.chr)
     elseif v.level == 2 then
-      mark = _adjust_marker_width(v.double, v.char:upper())
+      mark = _adjust_marker_width(v.double, v.chr:upper())
     else
       mark = v.actual:upper()
     end
@@ -507,7 +529,7 @@ function _session.create_line_marker(self, width, input, lower)
   end
   ---@cast iter_marks -?
   local related = function(v, count)
-    if (v.level > 1) and (v.char == lower or v.altchar == lower) then
+    if (v.level > 1) and (v.chr == lower or v.altchr == lower) then
       local _, key = iter_marks:next()
       if key then
         self.keys.first_idx[key] = count
@@ -555,10 +577,10 @@ end
 
 -- Whether a uppercase or a kana character
 ---@param symbol boolean
----@param char string
+---@param chr string
 ---@return boolean
-local function _upper_or_kana(symbol, char)
-  return symbol and char:match('[%w%p%s]') or char:match('%u')
+local function _upper_or_kana(symbol, chr)
+  return symbol and chr:match('[%w%p%s]') or chr:match('%u')
 end
 
 -- Move the cursor to the desired position
@@ -607,7 +629,9 @@ function Fret.playing(mapkey, direction, till)
     return
   end
   Session['line'] = Session:get_keys(indices)
-  Session:attach_extmark()
+  if not Session.ignore_extmark then
+    Session:attach_extmark()
+  end
   local input = Session:key_in()
   if input then
     Session:gain(input)
@@ -639,6 +663,22 @@ function Fret.dotrepeat()
   vim.cmd.normal({ Session.dotrepeat, bang = true })
 end
 
+function Fret.same_key_repeat()
+  local input = Session.lastchr
+  if input:match('%U') then
+    local keycode = fn.getchar(0)
+    if keycode ~= 0 then
+      local repeat_key = fn.nr2char(keycode)
+      if repeat_key == input:lower() then
+        vim.b.fret_session_repeat = true
+        vim.api.nvim_input(Session.lastmap .. input)
+      else
+        vim.api.nvim_input(repeat_key)
+      end
+    end
+  end
+end
+
 function Fret.setup(opts)
   local conf = require('fret.config').set_options(opts)
   if not conf then
@@ -648,10 +688,8 @@ function Fret.setup(opts)
 
   Fret.altkeys.lshift = conf.altkeys.lshift
   Fret.altkeys.rshift = conf.altkeys.rshift
+  Fret.beacon = conf.beacon
   Fret.hlgroup = conf.hlgroup
-  Fret.flashing = function()
-    util.beacon(conf.beacon.hl, conf.beacon.blend, conf.beacon.decay)
-  end
 
   local augroup = api.nvim_create_augroup(UNIQUE_ID, { clear = true })
   util.set_hl(conf.hl_detail[vim.go.background])

@@ -6,6 +6,7 @@ License: MIT License
 CONTENTS                                                       *fret-contents*
 
 Introduction                                               |fret-introduction|
+Deprecated                                                   |fret-deprecated|
 Usage                                                             |fret-usage|
 Interface                                                     |fret-interface|
   function                                                     |fret-function|
@@ -26,6 +27,11 @@ The maximum number of characters recognized by fret is limited to 1000 chara-
 cters due to performance reasons. For cases consisting of tens of thousands
 of characters, such as minified code, please use a separate plugin dedicated
 to in-screen searching.
+
+==============================================================================
+Deprecated                                                   *fret-deprecated*
+
+- |fret_beacon|     Renamed to |fret_enable_beacon|
 
 ==============================================================================
 USAGE                                                             *fret-usage*
@@ -74,16 +80,17 @@ setup({cfg})                                             *fret.config.setup()*
         Setup and activate fret
 
         Parameters: ~
-              {fret_timeout}        (integer):  |g:fret_timeout|
-              {fret_enable_kana}    (boolean):  |g:fret_enable_kana|
-              {fret_enable_symbol}  (boolean):  |g:fret_enable_symbol|
-              {fret_repeat_notify}  (boolean):  |g:fret_repeat_notify|
-              {fret_smart_fold}     (boolean):  |g:fret_smart_fold|
-              {fret_hlmode}         (string):   |g:fret_hlmode|
-              {fret_beacon}         (string):   |g:fret_beacon|
-              {beacon_opts}         (table):    |fret-beacon|
-              {mapkeys}             (table):    |fret-mapkeys|
-              {altkeys}             (table):    |fret-altkeys|
+              {fret_timeout}          (integer):  |g:fret_timeout|
+              {fret_samekey_timeout}  (integer):  |g:fret_samekey_timeout|
+              {fret_enable_beacon}    (string):   |g:fret_enable_beacon|
+              {fret_enable_kana}      (boolean):  |g:fret_enable_kana|
+              {fret_enable_symbol}    (boolean):  |g:fret_enable_symbol|
+              {fret_repeat_notify}    (boolean):  |g:fret_repeat_notify|
+              {fret_smart_fold}       (boolean):  |g:fret_smart_fold|
+              {fret_hlmode}           (string):   |g:fret_hlmode|
+              {beacon_opts}           (table):    |fret-beacon|
+              {mapkeys}               (table):    |fret-mapkeys|
+              {altkeys}               (table):    |fret-altkeys|
 
 
 ------------------------------------------------------------------------------
@@ -91,7 +98,16 @@ VARIABLE                                                       *fret-variable*
 
 g:fret_timeout                                                *g:fret_timeout*
 
-        Key waiting time(ms). Upon elapse, the command is terminated.
+        Key waiting time(ms). When the timeout elapses,
+        the command is terminated.
+
+        Type: `integer`, Default: `0`
+
+g:fret_samekey_timeout                                *g:fret_samekey_timeout*
+
+        Same key repeat timeout(ms). When the timeout elapses,
+        the command is terminated. Note that this function
+        cannot be used simultaneously with the beacon function.
 
         Type: `integer`, Default: `0`
 
@@ -127,7 +143,7 @@ g:fret_hlmode                                                  *g:fret_hlmode*
 
         Type: string, Default: "replace"
 
-g:fret_beacon                                                  *g:fret_beacon*
+g:fret_enable_beacon                                           *g:fret_beacon*
 
         Displays a beacon
 
@@ -144,15 +160,17 @@ Default settings ~
 beacon                                                           *fret-beacon*
 
         Beacon options.
-        blend:[0-100]  the initial winblend value
-        decay:[0-100]  the decay value of the beacon
-                       10-20 are probably effective
+        interval: integer   (milliseconds) interval to apply winblend
+        blend:[0-100]       the initial winblend value
+        decay:[0-100]       the decay value of the beacon
+                            10-20 are probably effective
 
         Type: table,
         Default: {
           hl = "FretAlternative",
-          blend = 30,
-          decay = 15
+          interval = 80,
+          blend = 20,
+          decay = 10
         }
 
 mapkeys                                                         *fret-mapkeys*
