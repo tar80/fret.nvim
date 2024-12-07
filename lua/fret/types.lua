@@ -10,7 +10,8 @@
 
 ---@class Options
 ---@field fret_timeout integer
----@field fret_samekey_timeout integer
+---@field fret_samekey_repeat boolean
+---@field fret_samekey_timeout integer @deprecated
 ---@field fret_beacon boolean @deprecated
 ---@field fret_enable_beacon boolean
 ---@field fret_enable_kana boolean
@@ -33,7 +34,7 @@
 ---@field enable_fold boolean
 ---@field enable_beacon boolean
 ---@field timeout integer
----@field samekey_timeout integer
+---@field samekey_repeat boolean
 ---@field vcount integer
 ---@field mapkey string
 ---@field reversive boolean

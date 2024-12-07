@@ -53,7 +53,7 @@ function _session.new(mapkey, direction, till)
     enable_symbol = vim.g.fret_enable_symbol,
     enable_fold = vim.g.fret_smart_fold,
     timeout = vim.g.fret_timeout,
-    samekey_timeout = vim.g.fret_samekey_timeout,
+    samekey_repeat = vim.g.fret_samekey_repeat,
     vcount = vim.v.count1,
     mapkey = mapkey,
     reversive = direction == 'forward',
@@ -436,7 +436,7 @@ function _session.finish(self)
 end
 
 function _session.post_process(self, count)
-  if self.samekey_timeout > 0 then
+  if self.samekey_repeat then
     self.last_chr = self.keys.detail[count].chr
     vim.api.nvim_input('<Plug>(fret-cue)')
   elseif self.enable_beacon then

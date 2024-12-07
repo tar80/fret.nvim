@@ -21,9 +21,13 @@ It provides alternate keys to jump to related character.
 ### New feature Same-Key-Repeat function is now available
 
 Pressing a lowercase key allows you to perform short, repeated actions using the same key.
-This feature is enabled when the `g:fret_samekey_timeout` variable is set to 0 or greater.
-`g:fret_samekey_timeout` specifies the key acceptance time in milliseconds.
+This feature is enabled when the `g:fret_samekey_repeat` variable is set to 0 or greater.
+`g:fret_samekey_repeat` specifies the key acceptance time in milliseconds.
 For specification reasons, it cannot be used in conjunction with the beacon function.
+
+> [!WARNING]
+> `g:fret_samekey_timeout` was renamed to `g:fret_samekey_repeat`
+> and the value changed from an integer to a boolean
 
 ![demo_samekey_repeat](https://github.com/user-attachments/assets/57eb0714-6040-4ccb-9607-fce58296e624)
 
@@ -49,13 +53,13 @@ For specification reasons, it cannot be used in conjunction with the beacon func
 - `mapkeys` field must be set to activate fret.nvim. Other fields are optional
 
 ```lua:
-require('fret.config').setup({
+require('fret').setup({
   fret_timeout = 0,
-  fret_samekey_timeout = 0,
   fret_enable_beacon = false,
   fret_enable_kana = false,
   fret_enable_symbol = false,
   fret_repeat_notify = false,
+  fret_samekey_repeat = false,
   fret_smart_fold = false,
   fret_hlmode = 'replace',
   beacon_opts = {

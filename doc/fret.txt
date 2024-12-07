@@ -31,7 +31,8 @@ to in-screen searching.
 ==============================================================================
 Deprecated                                                   *fret-deprecated*
 
-- |fret_beacon|     Renamed to |fret_enable_beacon|
+- |fret_beacon|           Renamed to |fret_enable_beacon|
+- |fret_samekey_timeout|  Renamed to |fret_samekey_repeat|
 
 ==============================================================================
 USAGE                                                             *fret-usage*
@@ -81,7 +82,7 @@ setup({cfg})                                             *fret.config.setup()*
 
         Parameters: ~
               {fret_timeout}          (integer):  |g:fret_timeout|
-              {fret_samekey_timeout}  (integer):  |g:fret_samekey_timeout|
+              {fret_samekey_repeat}  (integer):  |g:fret_samekey_repeat|
               {fret_enable_beacon}    (string):   |g:fret_enable_beacon|
               {fret_enable_kana}      (boolean):  |g:fret_enable_kana|
               {fret_enable_symbol}    (boolean):  |g:fret_enable_symbol|
@@ -103,7 +104,7 @@ g:fret_timeout                                                *g:fret_timeout*
 
         Type: `integer`, Default: `0`
 
-g:fret_samekey_timeout                                *g:fret_samekey_timeout*
+g:fret_samekey_repeat                                  *g:fret_samekey_repeat*
 
         Same key repeat timeout(ms). When the timeout elapses,
         the command is terminated. Note that this function

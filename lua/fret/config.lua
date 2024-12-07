@@ -74,7 +74,7 @@ function M.set_options(opts)
     return
   end
   vim.validate('fret_timeout', opts.fret_timeout, 'number', true)
-  vim.validate('fret_samekey_timeout', opts.fret_samekey_timeout, 'number', true)
+  vim.validate('fret_samekey_repeat', opts.fret_samekey_repeat, 'boolean', true)
   vim.validate('fret_enable_beacon', opts.fret_enable_beacon, 'boolean', true)
   vim.validate('fret_enable_kana', opts.fret_enable_kana, 'boolean', true)
   vim.validate('fret_enable_symbol', opts.fret_enable_symbol, 'boolean', true)
@@ -90,16 +90,21 @@ function M.set_options(opts)
   vim.g.fret_enable_symbol = opts.fret_enable_symbol
   vim.g.fret_repeat_notify = opts.fret_repeat_notify
   vim.g.fret_hlmode = opts.fret_hlmode
+  vim.g.fret_samekey_repeat = opts.fret_samekey_repeat
   vim.g.fret_smart_fold = opts.fret_smart_fold
   vim.g.fret_timeout = opts.fret_timeout or 0
-  vim.g.fret_samekey_timeout = opts.fret_samekey_timeout or 0
   if opts.mapkeys then
     register_keymap(opts.mapkeys)
   end
 
   -- notify deprecated options
+  if opts.fret_samekey_timeout then
+    vim.deprecate('fret_samekey_timeout', 'fret_samekey_repeat', 'recently', 'Fret', false)
+    vim.g.fret_samekey_repeat = true
+  end
   if opts.fret_beacon then
     vim.deprecate('fret_beacon', 'fret_enable_beacon', 'recently', 'Fret', false)
+    vim.g.fret_enable_beacon = true
   end
 
   local _altkeys = {
