@@ -4,17 +4,7 @@ local Fret = {}
 local tbl = require('fret.tbl')
 local api = vim.api
 local fn = vim.fn
----@module 'util'
-local util = setmetatable({}, {
-  __index = function(mod, key)
-    mod = package.loaded['matchwith.util'] or require('fret.util')
-    return mod[key]
-  end,
-})
--- util module hub
-function Fret.util_call()
-  return util
-end
+local util = require('fret.util')
 
 local UNIQUE_ID = 'fret-nvim'
 
