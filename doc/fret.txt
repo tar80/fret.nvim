@@ -1,4 +1,4 @@
-fret.txt        Brilliant horizontal cursor movement
+*fret.txt*                                Brilliant horizontal cursor movement
 
 Author:  tar80 <tar80master@google.com>
 License: MIT License

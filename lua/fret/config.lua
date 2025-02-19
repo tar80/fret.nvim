@@ -1,6 +1,7 @@
 ---@class config
 ---@field set_options fun(opts:Options):table?
 local M = {}
+local validate = require('fret.compat').validate
 
 local L_SHIFT = 'JKLUIOPNMHY'
 local R_SHIFT = 'FDSAREWQVCXZGTB'
@@ -73,17 +74,17 @@ function M.set_options(opts)
   if not opts then
     return
   end
-  vim.validate('fret_timeout', opts.fret_timeout, 'number', true)
-  vim.validate('fret_samekey_repeat', opts.fret_samekey_repeat, 'boolean', true)
-  vim.validate('fret_enable_beacon', opts.fret_enable_beacon, 'boolean', true)
-  vim.validate('fret_enable_kana', opts.fret_enable_kana, 'boolean', true)
-  vim.validate('fret_enable_symbol', opts.fret_enable_symbol, 'boolean', true)
-  vim.validate('fret_repeat_notify', opts.fret_repeat_notify, 'boolean', true)
-  vim.validate('fret_smart_fold', opts.fret_smart_fold, 'boolean', true)
-  vim.validate('fret_hlmode', opts.fret_hlmode, 'string', true)
-  vim.validate('beacon_opts', opts.beacon_opts, 'table', true)
-  vim.validate('altkeys', opts.altkeys, 'table', true)
-  vim.validate('mapkeys', opts.mapkeys, 'table', false)
+  validate('fret_timeout', opts.fret_timeout, 'number', true)
+  validate('fret_samekey_repeat', opts.fret_samekey_repeat, 'boolean', true)
+  validate('fret_enable_beacon', opts.fret_enable_beacon, 'boolean', true)
+  validate('fret_enable_kana', opts.fret_enable_kana, 'boolean', true)
+  validate('fret_enable_symbol', opts.fret_enable_symbol, 'boolean', true)
+  validate('fret_repeat_notify', opts.fret_repeat_notify, 'boolean', true)
+  validate('fret_smart_fold', opts.fret_smart_fold, 'boolean', true)
+  validate('fret_hlmode', opts.fret_hlmode, 'string', true)
+  validate('beacon_opts', opts.beacon_opts, 'table', true)
+  validate('altkeys', opts.altkeys, 'table', true)
+  validate('mapkeys', opts.mapkeys, 'table', false)
 
   vim.g.fret_enable_beacon = opts.fret_enable_beacon
   vim.g.fret_enable_kana = opts.fret_enable_kana

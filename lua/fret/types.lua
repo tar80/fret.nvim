@@ -1,5 +1,5 @@
 ---@alias AltKeys 'lshift'|'rshift'
----@alias Beacon {hl:string,interval:integer,blend:integer,decay:integer}
+---@alias Beacon {hl:string,interval:integer,blend:integer,decay:integer,instance:table}
 ---@alias MapKeys 'fret_f'|'fret_F'|'fret_t'|'fret_T'
 ---@alias Direction 'forward'|'backward'
 ---@alias Hlgroup 'FretCandidateFirst'|'FretCandidateSecond'|'FretCandidateSub'|'FretAlternative'|'FretIgnore'
@@ -47,6 +47,7 @@
 ---@field info_width integer
 ---@field line string
 ---@field keys Keys
+---@field utf_encoding UtfEncoding
 ---@field is_fold true?
 ---@field ignore_extmark true?
 ---@field hints? table<integer,HintDetails>

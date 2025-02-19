@@ -1,15 +1,20 @@
 ---@class Fret
 local Fret = {}
 
+---@module 'util'
+local helper = require('fret.helper')
+local util = require('fret.util')
+local timer = require('fret.timer')
+local beacon = require('fret.beacon')
+local compat = require('fret.compat')
 local tbl = require('fret.tbl')
 local api = vim.api
 local fn = vim.fn
-local util = require('fret.util')
 
-local UNIQUE_ID = 'fret-nvim'
+local UNIQUE_NAME = 'fret.nvim'
 
-Fret.ns = api.nvim_create_namespace(UNIQUE_ID)
-Fret.timer = util.set_timer()
+Fret.ns = api.nvim_create_namespace(UNIQUE_NAME)
+Fret.timer = timer.set_timer()
 Fret.mapped_trigger = false
 Fret.altkeys = {}
 Fret.beacon = {}
@@ -35,7 +40,7 @@ function _session.new(mapkey, direction, till)
     winid = winid,
     cur_row = pos[1],
     cur_col = pos[2],
-    conceallevel = vim.wo.conceallevel,
+    conceallevel = vim.wo[winid].conceallevel,
     hlmode = vim.g.fret_hlmode,
     notify = vim.g.fret_repeat_notify,
     enable_beacon = vim.g.fret_enable_beacon,
@@ -47,10 +52,11 @@ function _session.new(mapkey, direction, till)
     vcount = vim.v.count1,
     mapkey = mapkey,
     reversive = direction == 'forward',
-    operative = util.is_operator(),
+    operative = helper.is_operator(),
     till = till,
     front_byteidx = 0,
     keys = _newkeys(),
+    utf_encoding = helper.utf_encoding(),
   }
   if vim.b.fret_session_repeat then
     vim.b.fret_session_repeat = false
@@ -60,9 +66,16 @@ function _session.new(mapkey, direction, till)
   return setmetatable(self, { __index = _session })
 end
 
+-- Adjust the number for zero-based
+---@param idx integer
+---@return integer zero-based index
+local function zerobase(idx)
+  return idx - 1
+end
+
 -- Abort operation
 ---@operative boolean
-local function _abort(operative)
+local function abort(operative)
   if operative then
     api.nvim_input('<Cmd>normal! u<CR>')
   end
@@ -71,8 +84,8 @@ end
 -- Open the fold. If it is folded
 ---@param session Session
 ---@return true?
-local function _fold_open(session)
-  if session.enable_fold and (vim.fn.foldclosed(session.cur_row) ~= -1) then
+local function fold_open(session)
+  if session.enable_fold and (fn.foldclosed(session.cur_row) ~= -1) then
     vim.cmd.foldopen()
     return true
   end
@@ -80,7 +93,7 @@ end
 
 -- Close the fold. If it was opened by fret
 ---@param is_fold boolean
-local function _fold_close(is_fold)
+local function fold_close(is_fold)
   if is_fold then
     vim.cmd.foldclose()
   end
@@ -110,10 +123,12 @@ function _session.set_line_informations(self)
   if self.reversive then
     indices = line:sub(1, self.cur_col - leftcol)
   else
-    ---NOTE: An additional parameter was added to specify the character encoding as the second argument.
-    ---     This needs to be corrected for Neovim 0.11.0 release.
-    ---@diagnostic disable-next-line: param-type-mismatch, missing-parameter
-    self['front_byteidx'] = vim.str_byteindex(line, vim.str_utfindex(line, self.cur_col + 1))
+    self['front_byteidx'] = compat.str_byteindex(
+      line,
+      self.utf_encoding,
+      compat.str_utfindex(line, self.utf_encoding, self.cur_col + 1, false),
+      false
+    )
     indices = line:sub(self.front_byteidx - leftcol + 1)
   end
   self['leftcol'] = leftcol
@@ -125,7 +140,7 @@ end
 ---@param chr string
 ---@param name string Table name in string array
 ---@return string?
-local function _valid_key(chr, name)
+local function valid_key(chr, name)
   for k, v in pairs(tbl[name]) do
     if v:find(chr, 1, true) then
       return k
@@ -133,11 +148,11 @@ local function _valid_key(chr, name)
   end
 end
 
--- Extract matched characters
+-- Get matched character details
 ---@param actual string
 ---@param enable_kana boolean
 ---@return string?,string,string?,string?,boolean?
-local function _matcher(actual, enable_kana)
+local function get_match_details(actual, enable_kana)
   local match, chr, altchr, double
   if actual:match('%C') then
     match = actual:match('[%w%p%s]')
@@ -146,7 +161,7 @@ local function _matcher(actual, enable_kana)
     elseif enable_kana then
       match = actual:match('[^%g%s]')
       if match then
-        chr = _valid_key(actual, 'kana')
+        chr = valid_key(actual, 'kana')
         if chr then
           double = not tbl.hankanalist:find(actual, 1, true)
           altchr = tbl.altchar[chr]
@@ -175,22 +190,22 @@ function _session.start_at_extmark(self, indices)
     prev_col = fn.screenpos(self.winid, self.cur_row, #indices).col
     return function(byteidx)
       local screen = fn.screenpos(self.winid, self.cur_row, self.front_byteidx + byteidx)
-      local screen_col = util.zerobase(screen.col) - self.info_width
+      local screen_col = zerobase(screen.col) - self.info_width
       if screen_col > prev_col then
         line_idx = line_idx + 1
       end
       prev_col = screen_col
-      self.keys.mark_pos[line_idx] = self.front_byteidx + util.zerobase(byteidx)
+      self.keys.mark_pos[line_idx] = self.front_byteidx + zerobase(byteidx)
       return line_idx
     end
   else
     prev_col = fn.screenpos(self.winid, self.cur_row, start_at).col
     return function(byteidx)
       local screen = fn.screenpos(self.winid, self.cur_row, self.front_byteidx + byteidx)
-      local screen_col = util.zerobase(screen.col) - self.info_width
+      local screen_col = zerobase(screen.col) - self.info_width
       if screen_col < prev_col then
         line_idx = line_idx + 1
-        self.keys.mark_pos[line_idx] = self.front_byteidx + util.zerobase(byteidx)
+        self.keys.mark_pos[line_idx] = self.front_byteidx + zerobase(byteidx)
       end
       prev_col = screen_col
       return line_idx
@@ -208,7 +223,7 @@ function _session.store_key(self, actual, idx, byteidx, start_at, kana)
       vcount = vcount - 1
       self.keys.ignore[actual] = vcount
     end
-    match, actual, chr, altchr, double = _matcher(actual, kana)
+    match, actual, chr, altchr, double = get_match_details(actual, kana)
     if match and (vcount < 1) then
       ---@cast chr -?
       level = self.keys.level[chr] and (self.keys.level[chr] + 1) or 1
@@ -263,7 +278,7 @@ end
 -- Add blank space for an inlay hint
 ---@param backward string
 ---@return string, string
-local function _hint(backward)
+local function adjust_inlay_hint_width(backward)
   local forward = ' '
   if backward:find(':') ~= 1 then
     forward, backward = backward, forward
@@ -274,7 +289,7 @@ end
 -- Extract a hint label
 ---@param label table
 ---@return string
-local function _hint_label(label)
+local function get_inlay_hint_label(label)
   local v = ''
   for _, t in ipairs(label) do
     v = string.format('%s%s', v, t.value)
@@ -288,7 +303,7 @@ function _session.is_concealed(self)
       return false
     end
   end
-  local row = util.zerobase(self.cur_row)
+  local row = zerobase(self.cur_row)
   if self.reversive then
     return function(byteidx)
       local skip = false
@@ -315,7 +330,7 @@ function _session.get_inlay_hints(self, width)
   if not inlay_hint then
     return {}
   end
-  local line = util.zerobase(self.cur_row)
+  local line = zerobase(self.cur_row)
   local start, end_ = self.front_byteidx + 1, self.front_byteidx + width
   local iter = vim.iter(inlay_hint.get({
     bufnr = self.bufnr,
@@ -327,8 +342,8 @@ function _session.get_inlay_hints(self, width)
   local hints = {}
   iter:each(function(v)
     local byteidx = v.inlay_hint.position.character - self.front_byteidx + 1
-    local actual = _hint_label(v.inlay_hint.label)
-    actual = string.format('%s%s', _hint(actual))
+    local actual = get_inlay_hint_label(v.inlay_hint.label)
+    actual = string.format('%s%s', adjust_inlay_hint_width(actual))
     hints[byteidx] = { actual = actual, level = 5, bytes = #actual }
   end)
   return hints
@@ -374,9 +389,9 @@ end
 function _session.key_in(self)
   Fret.timer.debounce(vim.g.fret_timeout, function()
     api.nvim_input('<Esc>')
-    _fold_close(self.is_fold)
+    fold_close(self.is_fold)
   end)
-  local input = fn.nr2char(fn.getchar())
+  local input = fn.nr2char(fn.getchar() --[[@as integer]])
   api.nvim_buf_clear_namespace(self.bufnr, Fret.ns, self.cur_row - 1, self.cur_row)
   if input:match('%C') then
     return input
@@ -413,7 +428,7 @@ function _session.operable(self, count)
   end
   if self.notify and self.operative then
     local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, chr)
-    util.notify(UNIQUE_ID, msg, vim.log.levels.INFO)
+    helper.notify(UNIQUE_NAME, msg, 'INFO')
   end
   return keystroke
 end
@@ -430,13 +445,10 @@ function _session.post_process(self, count)
     self.last_chr = self.keys.detail[count].chr
     vim.api.nvim_input('<Plug>(fret-cue)')
   elseif self.enable_beacon then
-    require('fret.beacon').flash_cursor(
-      self.winid,
-      Fret.beacon.hl,
-      Fret.beacon.interval,
-      Fret.beacon.blend,
-      Fret.beacon.decay
-    )
+    if type(Fret.beacon.instance) ~= 'table' then
+      Fret.beacon.instance = beacon.new(Fret.beacon.hl, Fret.beacon.interval, Fret.beacon.blend, Fret.beacon.decay)
+    end
+    Fret.beacon.instance:around_cursor(self.winid)
   end
 end
 
@@ -535,7 +547,7 @@ end
 
 -- Attach extmarks on current line
 function _session.attach_extmark(self, input, lower)
-  local row = util.zerobase(self.cur_row)
+  local row = zerobase(self.cur_row)
   local width = api.nvim_strwidth(self.line)
   local markers = self:create_line_marker(width, input, lower)
   if not input or (vim.tbl_count(self.keys.first_idx) > 1) then
@@ -557,7 +569,7 @@ function _session.related(self, input, lower)
   local match_item = vim.tbl_count(self.keys.first_idx)
   if match_item == 0 then
     api.nvim_input('<Esc>')
-    _fold_close(self.is_fold)
+    fold_close(self.is_fold)
   elseif match_item == 1 then
     self:operable(self.keys.first_idx[input])
   else
@@ -595,7 +607,7 @@ function _session.gain(self, input)
       self:related(input, lower)
     end
   else
-    _abort(self.operative)
+    abort(self.operative)
   end
 end
 
@@ -612,10 +624,9 @@ end
 -- Start operation
 function Fret.playing(mapkey, direction, till)
   Session = _session.new(mapkey, direction, till)
-  Session['is_fold'] = _fold_open(Session)
+  Session['is_fold'] = fold_open(Session)
   local indices = Session:set_line_informations()
-  ---@diagnostic disable-next-line: param-type-mismatch, missing-parameter
-  if not indices or (vim.str_utfindex(indices, #indices) <= Session.till) then
+  if not indices or (compat.str_utfindex(indices, Session.utf_encoding, #indices, false) <= Session.till) then
     return
   end
   Session['line'] = Session:get_keys(indices)
@@ -626,8 +637,8 @@ function Fret.playing(mapkey, direction, till)
   if input then
     Session:gain(input)
   else
-    _abort(Session.operative)
-    _fold_close(Session.is_fold)
+    abort(Session.operative)
+    fold_close(Session.is_fold)
   end
   Session:finish()
 end
@@ -642,10 +653,11 @@ function Fret.performing()
       return
     end
     input = input:match('[hjkl]') and input or '<Esc>'
-    api.nvim_input(input)
-    _fold_close(Session.is_fold)
+    api.nvim_feedkeys(input, 'mi', false)
+    -- api.nvim_input(input)
+    fold_close(Session.is_fold)
   end
-  _abort(Session.operative)
+  abort(Session.operative)
 end
 
 -- Handling dot-repeat
@@ -656,7 +668,7 @@ end
 function Fret.same_key_repeat()
   local input = Session.lastchr
   if input:match('%U') then
-    local keycode = fn.getchar(0)
+    local keycode = fn.getchar(0) --[[@as integer]]
     if keycode ~= 0 then
       local repeat_key = fn.nr2char(keycode)
       if repeat_key == input:lower() then
@@ -672,7 +684,7 @@ end
 function Fret.setup(opts)
   local conf = require('fret.config').set_options(opts)
   if not conf then
-    util.notify(UNIQUE_ID, 'Error: Requires arguments', vim.log.levels.ERROR)
+    helper.notify(UNIQUE_NAME, 'Error: Requires arguments', 'ERROR')
     return
   end
 
@@ -681,13 +693,13 @@ function Fret.setup(opts)
   Fret.beacon = conf.beacon
   Fret.hlgroup = conf.hlgroup
 
-  local augroup = api.nvim_create_augroup(UNIQUE_ID, { clear = true })
-  util.set_hl(conf.hl_detail[vim.go.background])
-  util.autocmd({ 'ColorScheme' }, {
+  local augroup = api.nvim_create_augroup(UNIQUE_NAME, { clear = true })
+  helper.set_hl(conf.hl_detail[vim.go.background])
+  helper.autocmd({ 'ColorScheme' }, {
     desc = 'Fret reset highlights',
     group = augroup,
     callback = function()
-      util.set_hl(conf.hl_detail[vim.go.background])
+      helper.set_hl(conf.hl_detail[vim.go.background])
     end,
   }, true)
 end

@@ -18,7 +18,7 @@ local ns = setmetatable({}, {
       vim.api.nvim_buf_set_extmark(0, self.namespace, row - 1, col, {
         end_col = col + 2,
         virt_text = { { '1', 'Error' }, { '2', 'Search' } },
-        virt_text_pos = 'overlay',
+        virt_text_pos = 'inline',
         hl_mode = 'combine',
       })
     end,
@@ -65,7 +65,7 @@ vim.api.nvim_create_user_command('TestCharInfo', function()
   local line = vim.api.nvim_get_current_line()
   local charidx = vim.str_utfindex(line, col)
   local byteidx = vim.str_byteindex(line, charidx)
-  local char = vim.fn.strcharpart(line, charidx, 1)
+  local char = vim.fn.strcharpart(line, charidx-1, 1)
   local dispwidth = vim.api.nvim_strwidth(line:sub(1, col))
   print('char:', char, 'bytes:', #char, 'idx:', charidx + 1, 'byteidx(col):', byteidx + 1, 'dispwidth:', dispwidth)
 end, {})
