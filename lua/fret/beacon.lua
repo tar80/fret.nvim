@@ -13,43 +13,43 @@ local DEFAULT_OPTIONS = {
   style = 'minimal',
 }
 
----@param hl string Hlgroup
+---@param hlgroup string Hlgroup
 ---@param interval integer repeat interval
 ---@param blend integer Initial value of winblend
 ---@param decay integer winblend becay
-function M.new(hl, interval, blend, decay)
+function M.new(hlgroup, interval, blend, decay)
+  vim.validate('hlgroup', hlgroup, 'string', true)
+  vim.validate('interval', interval, 'number', true)
+  vim.validate('blend', blend, 'number', true)
+  vim.validate('decay', decay, 'number', true)
   return setmetatable({
     timer = assert(vim.uv.new_timer()),
     is_running = false,
-    hl = hl,
-    interval = interval,
-    blend = blend,
-    decay = decay,
+    hlgroup = hlgroup or 'IncSearch',
+    interval = interval or 100,
+    blend = blend or 0,
+    decay = decay or 15,
   }, { __index = M })
 end
 
 -- Flash around the cursor
 ---@param winid integer
 function M:around_cursor(winid)
-  local win_region = function()
     local text = vim.api.nvim_get_current_line()
     local cur_col = vim.api.nvim_win_get_cursor(winid)[2]
-    local charidx = compat.str_utfindex(text, helper.utf_encoding(), cur_col, false)
-    local charwidth = helper.charwidth(text, charidx)
+    local charidx = compat.str_utfindex(text, 'utf-16', cur_col, false)
+    local cur_charwidth = helper.charwidth(text, charidx)
     local next_charwidth = helper.charwidth(text, charidx + 1)
-    local winwidth = next_charwidth == 0 and charwidth * 3 or charwidth * 2 + next_charwidth
+    local winwidth = next_charwidth == 0 and cur_charwidth * 3 or cur_charwidth * 2 + next_charwidth
     local row = vim.fn.winline() - 1
-    local col = vim.fn.wincol() - 1 - charwidth
+    local col = vim.fn.wincol() - 1 - cur_charwidth
     local relative = 'win'
-    return { height = 1, width = math.max(1, winwidth), row = row, col = col, relative = relative }
-  end
-  self:flash(win_region)
+  self:flash({ height = 1, width = math.max(1, winwidth), row = row, col = col, relative = relative })
 end
 
 -- Flash around the cursor position
----@param win_region fun():{height:integer,width:integer,row:integer,col:integer,relative?:string}
-function M:flash(win_region)
-  local region = win_region()
+---@param region {height:integer,width:integer,row:integer,col:integer,relative?:string}
+function M:flash(region)
   if not self.is_running then
     self.is_running = true
     vim.schedule(function()
@@ -58,7 +58,7 @@ function M:flash(win_region)
       self.winid = vim.api.nvim_open_win(bufnr, false, opts)
       vim.api.nvim_set_option_value(
         'winhighlight',
-        ('Normal:%s,EndOfBuffer:%s'):format(self.hl, self.hl),
+        ('Normal:%s,EndOfBuffer:%s'):format(self.hlgroup, self.hlgroup),
         { win = self.winid }
       )
       vim.api.nvim_set_option_value('winblend', self.blend, { win = self.winid })

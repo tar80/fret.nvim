@@ -1,4 +1,7 @@
+---@meta util
+---@class util
 local M = {}
+
 -- Add element to list. If there is no key in the list, create a new key
 ---@param tbl table
 ---@param key string|integer

@@ -34,7 +34,7 @@ function M.str_utfindex(s, encoding, index, strict_indexing)
   end
 end
 
-local _str_byteindex = vim.str_utfindex
+local _str_byteindex = vim.str_byteindex
 
 ---@param s string
 ---@param encoding Encoding

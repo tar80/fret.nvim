@@ -76,13 +76,13 @@ INTERFACE                                                     *fret-interface*
 ------------------------------------------------------------------------------
 FUNCTION                                                       *fret-function*
 
-setup({cfg})                                             *fret.config.setup()*
+setup({cfg})                                                    *fret.setup()*
 
         Setup and activate fret
 
         Parameters: ~
               {fret_timeout}          (integer):  |g:fret_timeout|
-              {fret_samekey_repeat}  (integer):  |g:fret_samekey_repeat|
+              {fret_samekey_repeat}   (integer):  |g:fret_samekey_repeat|
               {fret_enable_beacon}    (string):   |g:fret_enable_beacon|
               {fret_enable_kana}      (boolean):  |g:fret_enable_kana|
               {fret_enable_symbol}    (boolean):  |g:fret_enable_symbol|
