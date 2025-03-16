@@ -56,7 +56,7 @@ function _session.new(mapkey, direction, till)
     till = till,
     front_byteidx = 0,
     keys = _newkeys(),
-    utf_encoding = helper.utf_encoding(),
+    utf_encoding = 'utf-32',
   }
   if vim.b.fret_session_repeat then
     vim.b.fret_session_repeat = false
@@ -667,7 +667,7 @@ end
 
 function Fret.same_key_repeat()
   local input = Session.lastchr
-  if input:match('%U') then
+  if input and input:match('%U') then
     local keycode = fn.getchar(0) --[[@as integer]]
     if keycode ~= 0 then
       local repeat_key = fn.nr2char(keycode)

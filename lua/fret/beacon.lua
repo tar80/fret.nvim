@@ -37,7 +37,7 @@ end
 function M:around_cursor(winid)
     local text = vim.api.nvim_get_current_line()
     local cur_col = vim.api.nvim_win_get_cursor(winid)[2]
-    local charidx = compat.str_utfindex(text, 'utf-16', cur_col, false)
+    local charidx = compat.str_utfindex(text, 'utf-32', cur_col, false)
     local cur_charwidth = helper.charwidth(text, charidx)
     local next_charwidth = helper.charwidth(text, charidx + 1)
     local winwidth = next_charwidth == 0 and cur_charwidth * 3 or cur_charwidth * 2 + next_charwidth

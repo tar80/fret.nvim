@@ -26,12 +26,11 @@ end
 ---@param encoding? string
 ---@return string encoding
 function M.utf_encoding(encoding)
-  encoding = string.lower(encoding or vim.bo.fileencoding)
-  if encoding == '' then
-    encoding = vim.go.encoding
+  encoding = string.lower(encoding or '')
+  if encoding == 'utf-8' or encoding == 'utf-16' then
+    return encoding
   end
-  local has_match = ('utf-16,utf-32'):find(encoding, 1, true) ~= nil
-  return has_match and encoding or 'utf-8'
+  return 'utf-32'
 end
 
 -- Check the number of characters on the display
