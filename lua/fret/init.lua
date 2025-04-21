@@ -1,7 +1,3 @@
----@class Fret
-local Fret = {}
-
----@module 'util'
 local helper = require('fret.helper')
 local util = require('fret.util')
 local timer = require('fret.timer')
@@ -13,12 +9,15 @@ local fn = vim.fn
 
 local UNIQUE_NAME = 'fret.nvim'
 
-Fret.ns = api.nvim_create_namespace(UNIQUE_NAME)
-Fret.timer = timer.set_timer()
-Fret.mapped_trigger = false
-Fret.altkeys = {}
-Fret.beacon = {}
-Fret.hlgroup = {}
+---@class Fret
+local Fret = {
+  ns = api.nvim_create_namespace(UNIQUE_NAME),
+  timer = timer.set_timer(),
+  mapped_trigger = false,
+  altkeys = {},
+  beacon = {},
+  hlgroup = {},
+}
 
 -- Clean up the keys database
 local function _newkeys()
@@ -26,16 +25,17 @@ local function _newkeys()
 end
 
 ---@class Session
-local Session = { keys = _newkeys() }
+local _session = {}
+_session.__index = _session
 
 ---@class Session
-local _session = {}
+local Session = { keys = _newkeys() }
 
 -- Start new session
 function _session.new(mapkey, direction, till)
   local winid = api.nvim_get_current_win()
   local pos = api.nvim_win_get_cursor(winid)
-  local self = {
+  local instance = {
     bufnr = api.nvim_get_current_buf(),
     winid = winid,
     cur_row = pos[1],
@@ -60,10 +60,10 @@ function _session.new(mapkey, direction, till)
   }
   if vim.b.fret_session_repeat then
     vim.b.fret_session_repeat = false
-    self.enable_symbol = false
-    self.ignore_extmark = true
+    instance.enable_symbol = false
+    instance.ignore_extmark = true
   end
-  return setmetatable(self, { __index = _session })
+  return setmetatable(instance, _session)
 end
 
 -- Adjust the number for zero-based
@@ -643,6 +643,8 @@ function Fret.playing(mapkey, direction, till)
   Session:finish()
 end
 
+local _keycode_esc = vim.keycode('<Esc>')
+
 -- Handling related-mode
 function Fret.performing()
   local input = Session:key_in()
@@ -652,9 +654,8 @@ function Fret.performing()
       Session['dotrepeat'] = Session:operable(count)
       return
     end
-    input = input:match('[hjkl]') and input or '<Esc>'
+    input = input:match('[hjkl]') and input or _keycode_esc
     api.nvim_feedkeys(input, 'mi', false)
-    -- api.nvim_input(input)
     fold_close(Session.is_fold)
   end
   abort(Session.operative)
