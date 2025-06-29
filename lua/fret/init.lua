@@ -126,10 +126,10 @@ function _session.set_line_informations(self)
     self['front_byteidx'] = compat.str_byteindex(
       line,
       self.utf_encoding,
-      compat.str_utfindex(line, self.utf_encoding, self.cur_col + 1, false),
+      compat.str_utfindex(line, self.utf_encoding, self.cur_col - leftcol + 1, false),
       false
     )
-    indices = line:sub(self.front_byteidx - leftcol + 1)
+    indices = line:sub(self.front_byteidx + 1)
   end
   self['leftcol'] = leftcol
   self['info_width'] = info_width
@@ -428,7 +428,7 @@ function _session.operable(self, count)
   end
   if self.notify and self.operative then
     local msg = string.format('%s: %s%s%s%s', 'dotrepeat', operator, vcount, self.mapkey, chr)
-    helper.notify(UNIQUE_NAME, msg, 'INFO')
+    vim.notify(msg, vim.log.levels.INFO, { title = UNIQUE_NAME })
   end
   return keystroke
 end
@@ -552,8 +552,8 @@ function _session.attach_extmark(self, input, lower)
   local markers = self:create_line_marker(width, input, lower)
   if not input or (vim.tbl_count(self.keys.first_idx) > 1) then
     for line_idx, marker_text in pairs(markers) do
-      api.nvim_buf_set_extmark(self.bufnr, Fret.ns, row, self.keys.mark_pos[line_idx], {
-        end_col = width,
+      api.nvim_buf_set_extmark(self.bufnr, Fret.ns, row, self.keys.mark_pos[line_idx] + self.leftcol, {
+        end_col = width + self.leftcol,
         virt_text = marker_text,
         virt_text_pos = 'overlay',
         hl_mode = self.hlmode,
@@ -685,7 +685,7 @@ end
 function Fret.setup(opts)
   local conf = require('fret.config').set_options(opts)
   if not conf then
-    helper.notify(UNIQUE_NAME, 'Error: Requires arguments', 'ERROR')
+    vim.notify('Error: Requires arguments', vim.log.levels.ERROR, { title = UNIQUE_NAME })
     return
   end
 
