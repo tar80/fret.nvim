@@ -1,11 +1,11 @@
----@meta util
 ---@class util
 local M = {}
 
--- Add element to list. If there is no key in the list, create a new key
----@param tbl table
----@param key string|integer
----@param ... any
+-- Adds an element to a list within a table. If the specified key does not exist, a new key is created.
+---@param tbl table The table to which the element will be added.
+---@param key string|integer The key under which the list is stored.
+---@param ... any The value to be inserted and its position in the list.
+---@return nil
 function M.tbl_insert(tbl, key, ...)
   local args = { ... }
   local pos, value

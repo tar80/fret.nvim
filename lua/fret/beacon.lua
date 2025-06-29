@@ -1,5 +1,18 @@
-local M = {}
+---@class Beacon:BeaconInstance
+---@field new fun(hl:string,interval:integer,blend:integer,decay:integer):BeaconInstance
+---@field around_cursor? fun(self,winid:integer)
+---@field replaced_region fun(self,regcontents:string,height:integer,end_point:boolean)
 
+---@class BeaconInstance
+---@field timer uv.uv_timer_t
+---@field is_running boolean
+---@field hlgroup string
+---@field interval integer
+---@field blend integer
+---@field decay integer
+
+---@class Beacon
+local M = {}
 local helper = require('fret.helper')
 local compat = require('fret.compat')
 
