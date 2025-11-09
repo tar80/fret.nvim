@@ -175,6 +175,8 @@ local function get_match_details(actual, enable_kana)
           else
             match = false
           end
+        else
+          match = false
         end
       end
     end
