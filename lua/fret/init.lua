@@ -32,6 +32,9 @@ _session.__index = _session
 local Session = { keys = _newkeys() }
 
 -- Start new session
+---@param mapkey string
+---@param direction 'forward'|'backward'
+---@param till integer
 function _session.new(mapkey, direction, till)
   local winid = api.nvim_get_current_win()
   local pos = api.nvim_win_get_cursor(winid)
@@ -158,15 +161,20 @@ local function get_match_details(actual, enable_kana)
     match = actual:match('[%w%p%s]')
     if match then
       chr = actual:lower()
-    elseif enable_kana then
+    else
       match = actual:match('[^%g%s]')
       if match then
-        chr = valid_key(actual, 'kana')
+        chr = valid_key(actual, 'glyph')
         if chr then
-          double = not tbl.hankanalist:find(actual, 1, true)
-          altchr = tbl.altchar[chr]
-        else
-          match = false
+          double = (vim.api.nvim_strwidth(actual) > 1)
+        elseif enable_kana then
+          chr = valid_key(actual, 'kana')
+          if chr then
+            double = not tbl.hankanalist:find(actual, 1, true)
+            altchr = tbl.altchar[chr]
+          else
+            match = false
+          end
         end
       end
     end
