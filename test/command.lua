@@ -11,14 +11,15 @@ local ns = setmetatable({}, {
       close = tonumber(close)
       vim.api.nvim_buf_add_highlight(0, self.namespace, 'Error', row - 1, open - 0, close - 0)
     end,
-    add_extmark = function(self, row, col)
+    add_extmark = function(self, row, col, lchr, rchr)
       local cur_row, cur_col = unpack(vim.api.nvim_win_get_cursor(0))
       row = row and tonumber(row) or cur_row
       col = col and tonumber(col) or cur_col
       vim.api.nvim_buf_set_extmark(0, self.namespace, row - 1, col, {
         end_col = col + 2,
-        virt_text = { { '1', 'Error' }, { '2', 'Search' } },
+        virt_text = { { lchr, 'Error' }, { rchr, 'Search' } },
         virt_text_pos = 'inline',
+        hl_group = 'Search',
         hl_mode = 'combine',
       })
     end,
@@ -63,11 +64,11 @@ end, { nargs = '+' })
 vim.api.nvim_create_user_command('TestCharInfo', function()
   local _, col = unpack(vim.api.nvim_win_get_cursor(0))
   local line = vim.api.nvim_get_current_line()
-  local charidx = vim.str_utfindex(line, col)
-  local byteidx = vim.str_byteindex(line, charidx)
-  local char = vim.fn.strcharpart(line, charidx-1, 1)
+  local charidx = vim.str_utfindex(line, 'utf-32', col + 1)
+  local byteidx = vim.str_byteindex(line, 'utf-32', charidx)
+  local char = vim.fn.strcharpart(line, charidx - 1, 1)
   local dispwidth = vim.api.nvim_strwidth(line:sub(1, col))
-  print('char:', char, 'bytes:', #char, 'idx:', charidx + 1, 'byteidx(col):', byteidx + 1, 'dispwidth:', dispwidth)
+  vim.print('char:', char, 'bytes:', #char, 'idx:', charidx + 1, 'byteidx(col):', byteidx + 1, 'dispwidth:', dispwidth, 'col:', col + 1)
 end, {})
 vim.api.nvim_create_user_command('TestSetCursor', function(opts)
   return vim.api.nvim_win_set_cursor(0, { tonumber(opts.fargs[1]), tonumber(opts.fargs[2]) })
@@ -75,10 +76,13 @@ end, { nargs = '+' })
 vim.api.nvim_create_user_command('TestCharpart', function(opts)
   local _, col = unpack(vim.api.nvim_win_get_cursor(0))
   local line = vim.api.nvim_get_current_line()
-  print(line:sub(0, col))
+  vim.print(line:sub(0, col))
 end, { nargs = '?' })
 vim.api.nvim_create_user_command('TestExtmark', function(opts)
-  ns:add_extmark(opts.fargs[1], opts.fargs[2])
+  ns:add_extmark(opts.fargs[1], opts.fargs[2], '1', '2')
+end, { nargs = '*' })
+vim.api.nvim_create_user_command('TestExtmark2', function(opts)
+  ns:add_extmark(opts.fargs[1], opts.fargs[2], '@', '@')
 end, { nargs = '*' })
 vim.api.nvim_create_user_command('TestFloatwin', function(opts)
   if opts.args == 'close' then
