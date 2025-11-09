@@ -560,7 +560,8 @@ function _session.attach_extmark(self, input, lower)
   local row = zerobase(self.cur_row)
   local width = api.nvim_strwidth(self.line)
   local markers = self:create_line_marker(width, input, lower)
-  if not input or (vim.tbl_count(self.keys.first_idx) > 1) then
+  local match_count = vim.tbl_count(self.keys.first_idx)
+  if match_count > 0 then
     for line_idx, marker_text in pairs(markers) do
       api.nvim_buf_set_extmark(self.bufnr, Fret.ns, row, self.keys.mark_pos[line_idx] + self.leftcol, {
         end_col = width + self.leftcol,
@@ -571,16 +572,16 @@ function _session.attach_extmark(self, input, lower)
     end
     vim.cmd.redraw()
   end
+  return match_count
 end
 
 function _session.related(self, input, lower)
   self.keys.first_idx = {}
-  self:attach_extmark(input, lower)
-  local match_item = vim.tbl_count(self.keys.first_idx)
-  if match_item == 0 then
+  local match_count = self:attach_extmark(input, lower)
+  if match_count == 0 then
     api.nvim_input('<Esc>')
     fold_close(self.is_fold)
-  elseif match_item == 1 then
+  elseif match_count == 1 then
     self:operable(self.keys.first_idx[input])
   else
     vim.cmd('lua require("fret"):performing()')
@@ -641,7 +642,11 @@ function Fret.playing(mapkey, direction, till)
   end
   Session['line'] = Session:get_keys(indices)
   if not Session.ignore_extmark then
-    Session:attach_extmark()
+    local match_count = Session:attach_extmark()
+    if match_count == 0 then
+      fold_close(Session.is_fold)
+      return
+    end
   end
   local input = Session:key_in()
   if input then
