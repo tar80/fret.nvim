@@ -155,7 +155,7 @@ end
 ---@param actual string
 ---@param enable_kana boolean
 ---@return string?,string,string?,string?,boolean?
-local function get_match_details(actual, enable_kana)
+local function get_match_details(actual, enable_kana, enable_symbol)
   local match, chr, altchr, double
   if actual:match('%C') then
     match = actual:match('[%w%p%s]')
@@ -164,21 +164,24 @@ local function get_match_details(actual, enable_kana)
     else
       match = actual:match('[^%g%s]')
       if match then
-        chr = valid_key(actual, 'glyph')
-        if chr then
-          double = (vim.api.nvim_strwidth(actual) > 1)
-        elseif enable_kana then
+        if enable_symbol then
+          chr = valid_key(actual, 'glyph')
+          if chr then
+            double = (vim.api.nvim_strwidth(actual) > 1)
+            goto continue
+          end
+        end
+        if enable_kana then
           chr = valid_key(actual, 'kana')
           if chr then
             double = not tbl.hankanalist:find(actual, 1, true)
             altchr = tbl.altchar[chr]
-          else
-            match = false
+            goto continue
           end
-        else
-          match = false
         end
+        match = false
       end
+      ::continue::
     end
   end
   return match, actual, chr, altchr, double
@@ -224,7 +227,7 @@ function _session.start_at_extmark(self, indices)
 end
 
 -- Store key information in Session.keys
-function _session.store_key(self, actual, idx, byteidx, start_at, kana)
+function _session.store_key(self, actual, idx, byteidx, start_at)
   local match, chr, altchr, double
   local level = 0
   if idx > self.till then
@@ -233,7 +236,7 @@ function _session.store_key(self, actual, idx, byteidx, start_at, kana)
       vcount = vcount - 1
       self.keys.ignore[actual] = vcount
     end
-    match, actual, chr, altchr, double = get_match_details(actual, kana)
+    match, actual, chr, altchr, double = get_match_details(actual, self.enable_kana, self.enable_symbol)
     if match and (vcount < 1) then
       ---@cast chr -?
       level = self.keys.level[chr] and (self.keys.level[chr] + 1) or 1
@@ -385,7 +388,7 @@ function _session.get_keys(self, indices)
     idx = idx - skip_idx
     bytes = byteidx + vim.str_utf_end(indices, byteidx)
     chr = indices:sub(byteidx, bytes)
-    self:store_key(chr, idx, byteidx, start_at(byteidx), self.enable_kana)
+    self:store_key(chr, idx, byteidx, start_at(byteidx))
     new_indices = string.format('%s%s', new_indices, chr)
     i = i + 1
     if i > limit then

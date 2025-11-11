@@ -80,7 +80,7 @@
 ---@field new fun(mapkey:string,direction:Direction,till:integer):Session
 ---@field set_line_informations fun(self:self):string?
 ---@field start_at_extmark fun(self:self,indices:string):fun(integer):integer
----@field store_key fun(self:self,chr:string,idx:integer,byteidx:integer,start_at:integer,kana:boolean)
+---@field store_key fun(self:self,chr:string,idx:integer,byteidx:integer,start_at:integer)
 ---@field get_inlay_hints fun(self:self,width:integer):table<integer,HintDetails>?
 ---@field get_keys fun(self:self,indices:string):string
 ---@field key_in fun(self:self):string?
