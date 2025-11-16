@@ -164,12 +164,10 @@ local function get_match_details(actual, enable_kana, enable_symbol)
     else
       match = actual:match('[^%g%s]')
       if match then
-        if enable_symbol then
-          chr = valid_key(actual, 'glyph')
-          if chr then
-            double = (vim.api.nvim_strwidth(actual) > 1)
-            goto continue
-          end
+        chr = valid_key(actual, 'glyph')
+        if chr then
+          double = (vim.api.nvim_strwidth(actual) > 1)
+          goto continue
         end
         if enable_kana then
           chr = valid_key(actual, 'kana')
