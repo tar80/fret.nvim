@@ -308,8 +308,20 @@ local function get_inlay_hint_label(label)
   return v
 end
 
+-- Whether conceal has been applied
+---@param conceallevel integer
+---@return integer?
+local function has_conceal(conceallevel)
+  if conceallevel == 0 then
+    return
+  end
+  local concealcursor = vim.o.concealcursor
+  local vi_mode = vim.api.nvim_get_mode().mode:sub(1, 1):lower()
+  return concealcursor:find(vi_mode)
+end
+
 function _session.is_concealed(self)
-  if self.conceallevel == 0 then
+  if not has_conceal(self.conceallevel) then
     return function()
       return false
     end
