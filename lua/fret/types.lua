@@ -9,6 +9,7 @@
 ---@alias Details {[integer]: Detail}
 
 ---@class Options
+---@field fret_multi_label {filler: string, position: 'before'|'after'}
 ---@field fret_timeout integer
 ---@field fret_samekey_repeat boolean
 ---@field fret_samekey_timeout integer @deprecated
@@ -33,6 +34,7 @@
 ---@field enable_symbol boolean
 ---@field enable_fold boolean
 ---@field enable_beacon boolean
+---@field multi_label string
 ---@field timeout integer
 ---@field samekey_repeat boolean
 ---@field vcount integer

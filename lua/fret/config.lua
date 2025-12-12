@@ -3,6 +3,7 @@
 local M = {}
 local validate = require('fret.compat').validate
 
+local MULTI_LABEL = { filler = ' ', position = 'after' }
 local L_SHIFT = 'JKLUIOPNMHY'
 local R_SHIFT = 'FDSAREWQVCXZGTB'
 local KEYS = {
@@ -50,6 +51,12 @@ local hl_detail = {
   },
 }
 
+local function set_multi_label_pattern(opts)
+  local label = opts.fret_multi_label or MULTI_LABEL
+  local p = label.position == 'before' and '%s%%s' or '%%s%s'
+  return p:format(label.filler)
+end
+
 -- Register a fret operation key
 ---@param mapkeys table<MapKeys,string>
 local function register_keymap(mapkeys)
@@ -74,6 +81,17 @@ function M.set_options(opts)
   if not opts then
     return
   end
+  validate('fret_multi_label', opts.fret_multi_label, function(t)
+    local filler = t.filler
+    local position = t.position
+    if not (type(filler) == 'string' and #filler == 1) then
+      return false, 'fret_multi_label["filler"] must be a "1 byte character"'
+    end
+    if not (type(position) == 'string' and (position == 'before' or position == 'after')) then
+      return false, 'fret_multi_label["position"] must be "before" or "after"'
+    end
+    return true
+  end, true)
   validate('fret_timeout', opts.fret_timeout, 'number', true)
   validate('fret_samekey_repeat', opts.fret_samekey_repeat, 'boolean', true)
   validate('fret_enable_beacon', opts.fret_enable_beacon, 'boolean', true)
@@ -94,6 +112,7 @@ function M.set_options(opts)
   vim.g.fret_samekey_repeat = opts.fret_samekey_repeat
   vim.g.fret_smart_fold = opts.fret_smart_fold
   vim.g.fret_timeout = opts.fret_timeout or 0
+
   if opts.mapkeys then
     register_keymap(opts.mapkeys)
   end
@@ -119,6 +138,7 @@ function M.set_options(opts)
     beacon = _beacon,
     hlgroup = hlgroup,
     hl_detail = hl_detail,
+    multi_label = set_multi_label_pattern(opts),
   }
 end
 

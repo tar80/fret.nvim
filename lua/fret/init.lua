@@ -17,6 +17,7 @@ local Fret = {
   altkeys = {},
   beacon = {},
   hlgroup = {},
+  multi_label = ' %s',
 }
 
 -- Clean up the keys database
@@ -480,7 +481,7 @@ end
 ---@param marker string A uppercase letter
 ---@return string alt_letter
 local function _adjust_marker_width(double, marker)
-  return double and string.format(' %s', marker) or marker
+  return double and string.format(Fret.multi_label, marker) or marker
 end
 
 -- Map marks for related-mode
@@ -721,6 +722,7 @@ function Fret.setup(opts)
   Fret.altkeys.rshift = conf.altkeys.rshift
   Fret.beacon = conf.beacon
   Fret.hlgroup = conf.hlgroup
+  Fret.multi_label = conf.multi_label
 
   local augroup = api.nvim_create_augroup(UNIQUE_NAME, { clear = true })
   helper.set_hl(conf.hl_detail[vim.go.background])
