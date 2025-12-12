@@ -129,7 +129,7 @@ g:fret_repeat_notify                                    *g:fret_repeat_notify*
 
         Display dot-repeat commands with notification message.
 
-        Type: `boolean,` Default: `false`
+        Type: `boolean`, Default: `false`
 
 g:fret_smart_fold                                          *g:fret_smart_fold*
 
@@ -143,13 +143,13 @@ g:fret_hlmode                                                  *g:fret_hlmode*
         This defines how the background of highlighted characters is handled.
         The value is the same as the "hl_mode" option of nvim_buf_set_extmark()
 
-        Type: `string,` Default: `"replace"`
+        Type: `string`, Default: `"replace"`
 
 g:fret_enable_beacon                                           *g:fret_beacon*
 
         Displays a beacon
 
-        Type: `boolean,` Default: `false`
+        Type: `boolean`, Default: `false`
 
 ------------------------------------------------------------------------------
 CONFIGURATION                                             *fret-configuration*
