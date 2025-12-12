@@ -21,7 +21,7 @@ INTRODUCTION                                               *fret-introduction*
 Move the cursor to the desired character with fewer keystrokes.
 
 In addition to the general f/t plugin behavior, it implements Related-mode.
-It provides alternate keys to jump to related character.
+It provides alternative keys to jump to related character.
 
 The maximum number of characters recognized by fret is limited to 1000 chara-
 cters due to performance reasons. For cases consisting of tens of thousands
@@ -37,23 +37,23 @@ Deprecated                                                   *fret-deprecated*
 ==============================================================================
 USAGE                                                             *fret-usage*
 
-Type in f (or F,t,T) to highlight the cursor line
+Type f (or F,t,T) to highlight the cursor line
 
-A: To move to a underline character, you need to type only once
+A: To move to an underline character, you need to type only once
 B: To move to a dark-colored character, you must type at least twice
-C: The gray color character is out of scope
+C: Gray characters are out of scope
 
-          Example of input for how to move to case A.(Normal behavior)
+          Example input for moving to Case A.(Normal behavior)
 
             step1: input "f"
 
-          If it's a lowercase letter
+          If it is a lowercase letter
             step2: input "<lowercase of the target alphabet>"
 
-          Or a uppercase letter
+          Or an uppercase letter
             step2: input "<uppercase of the target alphabet>"
 
-          Example of input for how to move to case B.(Related-mode)
+          Example input for moving to Case B.(Related-mode)
 
             step1: input "f"
             step2: input "<uppercase of the target alphabet>"
@@ -63,12 +63,12 @@ C: The gray color character is out of scope
             the key pressed when step2 is executed.
 
 Note
-• Operator commands can be executed even in related-mode, but repeat commands
+• Operator commands can be executed even in Related-mode, but repeat commands
   may differ from actual keystrokes due to internal command optimization.
   Even in such cases, you can display the contents of the repeat command
   by configuring |fret_repeat_notify|
 
-• Case B. highlighting is for alphabets(and kana charactors)
+• Case B highlighting is for alphabets(and kana charactors)
 
 ==============================================================================
 INTERFACE                                                     *fret-interface*
@@ -89,6 +89,7 @@ setup({cfg})                                                    *fret.setup()*
               {fret_repeat_notify}    (boolean):  |g:fret_repeat_notify|
               {fret_smart_fold}       (boolean):  |g:fret_smart_fold|
               {fret_hlmode}           (string):   |g:fret_hlmode|
+              {multi-label}           (table):    |fret-multi-label|
               {beacon_opts}           (table):    |fret-beacon|
               {mapkeys}               (table):    |fret-mapkeys|
               {altkeys}               (table):    |fret-altkeys|
@@ -99,14 +100,14 @@ VARIABLE                                                       *fret-variable*
 
 g:fret_timeout                                                *g:fret_timeout*
 
-        Key waiting time(ms). When the timeout elapses,
+        Key waiting time (ms). When the timeout elapses,
         the command is terminated.
 
         Type: `integer`, Default: `0`
 
 g:fret_samekey_repeat                                  *g:fret_samekey_repeat*
 
-        Same key repeat timeout(ms). When the timeout elapses,
+        Same key repeat timeout (ms). When the timeout elapses,
         the command is terminated. Note that this function
         cannot be used simultaneously with the beacon function.
 
@@ -114,41 +115,41 @@ g:fret_samekey_repeat                                  *g:fret_samekey_repeat*
 
 g:fret_enable_kana                                        *g:fret_enable_kana*
 
-        Enable move to kana characters.
+        Enable moving to kana characters.
 
         Type: `boolean`, Default: `false`
 
 g:fret_enable_symbol                                    *g:fret_enable_symbol*
 
-        Enable related-mode to symbol characters.
+        Enable Related-mode for symbol characters.
 
         Type: `boolean`, Default: `false`
 
 g:fret_repeat_notify                                    *g:fret_repeat_notify*
 
-        Display dot-repeat command with notification message.
+        Display dot-repeat commands with notification message.
 
-        Type: boolean, Default: false
+        Type: `boolean,` Default: `false`
 
 g:fret_smart_fold                                          *g:fret_smart_fold*
 
         When the cursor is at the beginning of a fold, unfold it.
         If the cursor has not moved, it will automatically fold again.
 
-        Type: boolean, Default: false
+        Type: `boolean,` Default: `false`
 
 g:fret_hlmode                                                  *g:fret_hlmode*
 
-        This is how to handle the background of highlighted characters
-        Value is the same as the option "hl_mode" of nvim_buf_set_extmark()
+        This defines how the background of highlighted characters is handled.
+        The value is the same as the "hl_mode" option of nvim_buf_set_extmark()
 
-        Type: string, Default: "replace"
+        Type: `string,` Default: `"replace"`
 
 g:fret_enable_beacon                                           *g:fret_beacon*
 
         Displays a beacon
 
-        Type: boolean, Default: false
+        Type: `boolean,` Default: `false`
 
 ------------------------------------------------------------------------------
 CONFIGURATION                                             *fret-configuration*
@@ -158,6 +159,18 @@ It automatically registers keymaps from the |fret-mapkeys| values.
 
 Default settings ~
 
+multi-label                                                 *fret-multi-label*
+
+        You can specify width alignment for multibyte character labels.
+        `filler` specifies the 1-byte character to use for width alignment.
+        `position` specifies the position where the filler is inserted.
+
+        Type: `table`
+        Default: {
+          filler = " ",
+          position = "after"
+        }
+
 beacon                                                           *fret-beacon*
 
         Beacon options.
@@ -166,7 +179,7 @@ beacon                                                           *fret-beacon*
         decay:[0-100]       the decay value of the beacon
                             10-20 are probably effective
 
-        Type: table,
+        Type: `table`
         Default: {
           hl = "FretAlternative",
           interval = 80,
@@ -176,9 +189,9 @@ beacon                                                           *fret-beacon*
 
 mapkeys                                                         *fret-mapkeys*
 
-        Keys to assign fret function.
+        Keys to assign fret functions.
 
-        Type: `table`,
+        Type: `table`
         Default: {
           fret_f = "f",
           fret_F = "F",
@@ -188,9 +201,9 @@ mapkeys                                                         *fret-mapkeys*
 
 altkeys                                                         *fret-altkeys*
 
-        Alternative letters to assign to Left/Right shift-key in Related-mode.
+        Alternative letters to assign to Left/Right shift-keys in Related-mode.
 
-        Type: `table`,
+        Type: `table`
         Default: {
           lshift = "JKLUIOPNMHY",
           rshift = "FDSAREWQVCXZTGB"
@@ -201,15 +214,15 @@ HIGHLIGHT                                                     *fret-highlight*
 
 *FretCandidateFirst*
 
-        Used for characters that first hit
+        Used for the first matched character
 
 *FretCandidateSecond*
 
-        Used for characters that second hit
+        Used for the second matched character
 
 *FretCandidateSub*
 
-        Used for characters that are candidates for related-mode
+        Used for characters that are candidates in Related-mode
 
 *FretAlternative*
 

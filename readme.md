@@ -52,7 +52,7 @@ For specification reasons, it cannot be used in conjunction with the beacon func
 
 - `mapkeys` field must be set to activate fret.nvim. Other fields are optional
 
-```lua:
+```lua
 require('fret').setup({
   fret_timeout = 0,
   fret_enable_beacon = false,
@@ -62,6 +62,10 @@ require('fret').setup({
   fret_samekey_repeat = false,
   fret_smart_fold = false,
   fret_hlmode = 'replace',
+  multi_label = {
+    filler = ' ',
+    position = 'before'
+  },
   beacon_opts = {
     hl = 'FretAlternative',
     interval = 80,
@@ -81,9 +85,7 @@ require('fret').setup({
 })
 ```
 
-## Known issues
-
-- [x] Now considers the conceal attribute
+<!-- ## Known issues -->
 
 ## Credits
 
