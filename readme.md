@@ -23,11 +23,7 @@ It provides alternate keys to jump to related character.
 Pressing a lowercase key allows you to perform short, chained actions using the same key.
 This feature is enabled when the `g:fret_samekey_chain` variable is set to `true`.
 
-> [!WARNING]
-> `g:fret_samekey_timeout` was renamed to `g:fret_samekey_chain`
-> and the value changed from an integer to a boolean
-
-![demo_samekey_chain](https://github.com/user-attachments/assets/57eb0714-6040-4ccb-9607-fce58296e624)
+![same_key_chain](https://github.com/user-attachments/assets/ccef0487-07f6-40ba-992c-2278a953af7b)
 
 ## Requirements
 
