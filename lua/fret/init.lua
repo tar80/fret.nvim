@@ -156,7 +156,7 @@ end
 ---@param actual string
 ---@param enable_kana boolean
 ---@return string?,string,string?,string?,boolean?
-local function get_match_details(actual, enable_kana, enable_symbol)
+local function get_match_details(actual, enable_kana)
   local match, chr, altchr, double
   if actual:match('%C') then
     match = actual:match('[%w%p%s]')
@@ -235,7 +235,7 @@ function _session.store_key(self, actual, idx, byteidx, start_at)
       vcount = vcount - 1
       self.keys.ignore[actual] = vcount
     end
-    match, actual, chr, altchr, double = get_match_details(actual, self.enable_kana, self.enable_symbol)
+    match, actual, chr, altchr, double = get_match_details(actual, self.enable_kana)
     if match and (vcount < 1) then
       ---@cast chr -?
       level = self.keys.level[chr] and (self.keys.level[chr] + 1) or 1
@@ -467,7 +467,19 @@ end
 function _session.post_process(self, count)
   if self.samekey_chain then
     self.last_chr = self.keys.detail[count].chr
+    self.hlmode = 'combine'
+    self:attach_extmark(self.last_chr, self.last_chr, true)
     vim.api.nvim_input('<Plug>(fret-cue)')
+    local timeout = vim.o.ttimeoutlen + 2
+
+    Fret.timer.throttle(timeout, function()
+      local vi_mode = vim.api.nvim_get_mode().mode:sub(1, 2)
+
+      if vi_mode ~= 'no' then
+        Fret.timer.stop()
+        api.nvim_buf_clear_namespace(self.bufnr, Fret.ns, self.cur_row - 1, self.cur_row)
+      end
+    end)
   elseif self.enable_beacon then
     if type(Fret.beacon.instance) ~= 'table' then
       Fret.beacon.instance = beacon.new(Fret.beacon.hl, Fret.beacon.interval, Fret.beacon.blend, Fret.beacon.decay)
@@ -537,7 +549,7 @@ function _session.get_markers(self, callback)
 end
 
 -- Create a table of extmarks
-function _session.create_line_marker(self, width, input, lower)
+function _session.create_line_marker(self, width, input, lower, chain)
   self['hints'] = self.hints or self:get_inlay_hints(width)
   local iter_marks = _iter_marks(input)
   local normal = function(v)
@@ -559,21 +571,25 @@ function _session.create_line_marker(self, width, input, lower)
       local _, key = iter_marks:next()
       if key then
         self.keys.first_idx[key] = count
+        if chain then
+          v.level = 6
+          return v.actual
+        end
         v.level = 4
         return _adjust_marker_width(v.double, key)
       end
     end
-    v.level = 0
+    v.level = chain and -1 or 0
     return v.actual
   end
   return self:get_markers(not input and normal or related)
 end
 
 -- Attach extmarks on current line
-function _session.attach_extmark(self, input, lower)
+function _session.attach_extmark(self, input, lower, chain)
   local row = zerobase(self.cur_row)
   local width = api.nvim_strwidth(self.line)
-  local markers = self:create_line_marker(width, input, lower)
+  local markers = self:create_line_marker(width, input, lower, chain)
   local match_count = vim.tbl_count(self.keys.first_idx)
   if match_count > 0 then
     for line_idx, marker_text in pairs(markers) do
@@ -625,6 +641,7 @@ function _session.gain(self, input)
       self['dotrepeat'] = self:operable(count)
     end
   elseif is_upper then
+    self.samekey_chain = false
     if subcount then
       self['dotrepeat'] = self:operable(subcount)
     else

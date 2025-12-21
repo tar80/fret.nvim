@@ -7,6 +7,7 @@ local HLGROUP = {
   sub = 'FretCandidateSub',
   alt = 'FretAlternative',
   hint = 'LspInlayHint',
+  chain = 'FretChain'
 }
 
 describe('Fret.config', function()
@@ -39,6 +40,7 @@ describe('Fret.config', function()
           [3] = HLGROUP.sub,
           [4] = HLGROUP.alt,
           [5] = HLGROUP.hint,
+          [6] = HLGROUP.chain,
         },
         hl_detail = {
           light = {
@@ -47,6 +49,7 @@ describe('Fret.config', function()
             [HLGROUP.second] = { fg = 'DarkCyan', bg = 'NONE', bold = true, underline = true },
             [HLGROUP.sub] = { fg = 'LightBlue', bg = 'NONE', underdotted = true },
             [HLGROUP.alt] = { fg = 'LightCyan', bg = 'DarkCyan', bold = true },
+            [HLGROUP.chain] = { fg = 'LightCyan', bg = 'DarkCyan', bold = true, reverse = true },
           },
           dark = {
             [HLGROUP.ignore] = { fg = 'Gray', bg = 'NONE' },
@@ -54,6 +57,7 @@ describe('Fret.config', function()
             [HLGROUP.second] = { fg = 'LightGreen', bg = 'NONE', bold = true, underline = true },
             [HLGROUP.sub] = { fg = 'DarkCyan', bg = 'NONE', underdotted = true },
             [HLGROUP.alt] = { fg = 'DarkGreen', bg = 'LightGreen', bold = true },
+            [HLGROUP.chain] = { fg = 'DarkGreen', bg = 'LightGreen', bold = true, reverse = true },
           },
         },
       })

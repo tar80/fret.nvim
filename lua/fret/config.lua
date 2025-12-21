@@ -25,6 +25,7 @@ local HLGROUP = {
   sub = 'FretCandidateSub',
   alt = 'FretAlternative',
   hint = 'LspInlayHint',
+  chain = 'FretChain',
 }
 local hlgroup = {
   [0] = HLGROUP.ignore,
@@ -33,6 +34,7 @@ local hlgroup = {
   [3] = HLGROUP.sub,
   [4] = HLGROUP.alt,
   [5] = HLGROUP.hint,
+  [6] = HLGROUP.chain,
 }
 local hl_detail = {
   light = {
@@ -41,6 +43,7 @@ local hl_detail = {
     [HLGROUP.second] = { fg = 'DarkCyan', bg = 'NONE', bold = true, underline = true },
     [HLGROUP.sub] = { fg = 'LightBlue', bg = 'NONE', underdotted = true },
     [HLGROUP.alt] = { fg = 'LightCyan', bg = 'DarkCyan', bold = true },
+    [HLGROUP.chain] = { fg = 'DarkCyan', bg = 'LightCyan', bold = true },
   },
   dark = {
     [HLGROUP.ignore] = { fg = 'Gray', bg = 'NONE' },
@@ -48,6 +51,7 @@ local hl_detail = {
     [HLGROUP.second] = { fg = 'LightGreen', bg = 'NONE', bold = true, underline = true },
     [HLGROUP.sub] = { fg = 'DarkCyan', bg = 'NONE', underdotted = true },
     [HLGROUP.alt] = { fg = 'DarkGreen', bg = 'LightGreen', bold = true },
+    [HLGROUP.chain] = { fg = 'LightGreen', bg = 'DarkGreen', bold = true },
   },
 }
 

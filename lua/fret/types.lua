@@ -91,8 +91,8 @@
 ---@field operable fun(self:self,conut:integer):string
 ---@field finish fun(self:self)
 ---@field get_markers fun(self:self,callback:fun(v:Details,count:integer):string):ChrHighlight[]
----@field create_line_marker fun(self:self,width:integer,input:string,lower:string):ChrHighlight[]
----@field attach_extmark fun(self:self,input?:string,lower?:string):integer
+---@field create_line_marker fun(self:self,width:integer,input:string,lower:string,chain:boolean):ChrHighlight[]
+---@field attach_extmark fun(self:self,input?:string,lower?:string,chain?:boolean):integer
 ---@field related fun(self:self,input:string,lower:string)
 ---@field gain fun(self:self,input:string)
 ---@field dotrepeat string
