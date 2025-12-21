@@ -52,7 +52,7 @@ function _session.new(mapkey, direction, till)
     enable_symbol = vim.g.fret_enable_symbol,
     enable_fold = vim.g.fret_smart_fold,
     timeout = vim.g.fret_timeout,
-    samekey_repeat = vim.g.fret_samekey_repeat,
+    samekey_chain = vim.g.fret_samekey_chain,
     vcount = vim.v.count1,
     mapkey = mapkey,
     reversive = direction == 'forward',
@@ -62,8 +62,8 @@ function _session.new(mapkey, direction, till)
     keys = _newkeys(),
     utf_encoding = 'utf-32',
   }
-  if vim.b.fret_session_repeat then
-    vim.b.fret_session_repeat = false
+  if vim.b.fret_session_chain then
+    vim.b.fret_session_chain = false
     instance.enable_symbol = false
     instance.ignore_extmark = true
   end
@@ -465,7 +465,7 @@ function _session.finish(self)
 end
 
 function _session.post_process(self, count)
-  if self.samekey_repeat then
+  if self.samekey_chain then
     self.last_chr = self.keys.detail[count].chr
     vim.api.nvim_input('<Plug>(fret-cue)')
   elseif self.enable_beacon then
@@ -695,17 +695,17 @@ function Fret.dotrepeat()
   vim.cmd.normal({ Session.dotrepeat, bang = true })
 end
 
-function Fret.same_key_repeat()
+function Fret.same_key_chain()
   local input = Session.lastchr
   if input and input:match('%U') then
     local keycode = fn.getchar(0) --[[@as integer]]
     if keycode ~= 0 then
-      local repeat_key = fn.nr2char(keycode)
-      if repeat_key == input:lower() then
-        vim.b.fret_session_repeat = true
+      local chain_key = fn.nr2char(keycode)
+      if chain_key == input:lower() then
+        vim.b.fret_session_chain = true
         vim.api.nvim_input(Session.lastmap .. input)
       else
-        vim.api.nvim_input(repeat_key)
+        vim.api.nvim_input(chain_key)
       end
     end
   end

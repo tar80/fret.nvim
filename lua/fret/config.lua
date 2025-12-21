@@ -72,9 +72,9 @@ local function register_keymap(mapkeys)
     end
   end
   vim.keymap.set({ 'n', 'x' }, '<Plug>(fret-cue)', function()
-    require('fret').same_key_repeat()
-  end, { desc = 'Fret same-key-repeat' })
-  vim.keymap.set({ 'n', 'x' }, '<Plug>(fret-cue)<Nul>', '<Nop>', { desc = 'Fret dummy map for same-key-repeat' })
+    require('fret').same_key_chain()
+  end, { desc = 'Fret same-key-chain' })
+  vim.keymap.set({ 'n', 'x' }, '<Plug>(fret-cue)<Nul>', '<Nop>', { desc = 'Fret same-key-chain timeout' })
 end
 
 function M.set_options(opts)
@@ -93,7 +93,7 @@ function M.set_options(opts)
     return true
   end, true)
   validate('fret_timeout', opts.fret_timeout, 'number', true)
-  validate('fret_samekey_repeat', opts.fret_samekey_repeat, 'boolean', true)
+  validate('fret_samekey_chain', opts.fret_samekey_chain, 'boolean', true)
   validate('fret_enable_beacon', opts.fret_enable_beacon, 'boolean', true)
   validate('fret_enable_kana', opts.fret_enable_kana, 'boolean', true)
   validate('fret_enable_symbol', opts.fret_enable_symbol, 'boolean', true)
@@ -109,7 +109,7 @@ function M.set_options(opts)
   vim.g.fret_enable_symbol = opts.fret_enable_symbol
   vim.g.fret_repeat_notify = opts.fret_repeat_notify
   vim.g.fret_hlmode = opts.fret_hlmode
-  vim.g.fret_samekey_repeat = opts.fret_samekey_repeat
+  vim.g.fret_samekey_chain = opts.fret_samekey_chain
   vim.g.fret_smart_fold = opts.fret_smart_fold
   vim.g.fret_timeout = opts.fret_timeout or 0
 
@@ -118,9 +118,9 @@ function M.set_options(opts)
   end
 
   -- notify deprecated options
-  if opts.fret_samekey_timeout then
-    vim.deprecate('fret_samekey_timeout', 'fret_samekey_repeat', 'recently', 'Fret', false)
-    vim.g.fret_samekey_repeat = true
+  if opts.fret_samekey_repeat then
+    vim.deprecate('fret_samekey_repeat', 'fret_samekey_chain', 'recently', 'Fret', false)
+    vim.g.fret_samekey_chain = true
   end
   if opts.fret_beacon then
     vim.deprecate('fret_beacon', 'fret_enable_beacon', 'recently', 'Fret', false)

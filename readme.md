@@ -14,22 +14,20 @@ It provides alternate keys to jump to related character.
 - [x] Supports Kana-moji
 - [x] Beacon flashes when cursor jumps
 - [x] Smart fold(automatically open and close folding)
-- [x] Same key repeat
+- [x] Same key chain
 
 [demo.mp4](https://github.com/tar80/fret.nvim/assets/45842304/b2957866-9184-4ea7-9b79-2b18dca17853)
 
-### New feature Same-Key-Repeat function is now available
+### New feature Same-Key-Chain function is now available
 
-Pressing a lowercase key allows you to perform short, repeated actions using the same key.
-This feature is enabled when the `g:fret_samekey_repeat` variable is set to 0 or greater.
-`g:fret_samekey_repeat` specifies the key acceptance time in milliseconds.
-For specification reasons, it cannot be used in conjunction with the beacon function.
+Pressing a lowercase key allows you to perform short, chained actions using the same key.
+This feature is enabled when the `g:fret_samekey_chain` variable is set to `true`.
 
 > [!WARNING]
-> `g:fret_samekey_timeout` was renamed to `g:fret_samekey_repeat`
+> `g:fret_samekey_timeout` was renamed to `g:fret_samekey_chain`
 > and the value changed from an integer to a boolean
 
-![demo_samekey_repeat](https://github.com/user-attachments/assets/57eb0714-6040-4ccb-9607-fce58296e624)
+![demo_samekey_chain](https://github.com/user-attachments/assets/57eb0714-6040-4ccb-9607-fce58296e624)
 
 ## Requirements
 
@@ -59,7 +57,7 @@ require('fret').setup({
   fret_enable_kana = false,
   fret_enable_symbol = false,
   fret_repeat_notify = false,
-  fret_samekey_repeat = false,
+  fret_samekey_chain = false,
   fret_smart_fold = false,
   fret_hlmode = 'replace',
   multi_label = {

@@ -11,7 +11,8 @@
 ---@class Options
 ---@field fret_multi_label {filler: string, position: 'before'|'after'}
 ---@field fret_timeout integer
----@field fret_samekey_repeat boolean
+---@field fret_samekey_chain boolean
+---@field fret_samekey_repeat boolean @deprecated
 ---@field fret_samekey_timeout integer @deprecated
 ---@field fret_beacon boolean @deprecated
 ---@field fret_enable_beacon boolean
@@ -36,7 +37,7 @@
 ---@field enable_beacon boolean
 ---@field multi_label string
 ---@field timeout integer
----@field samekey_repeat boolean
+---@field samekey_chain boolean
 ---@field vcount integer
 ---@field mapkey string
 ---@field reversive boolean

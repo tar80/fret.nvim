@@ -20,7 +20,7 @@ INTRODUCTION                                               *fret-introduction*
 *fret.nvim* is f/t enhancement plugin for Neovim.
 Move the cursor to the desired character with fewer keystrokes.
 
-In addition to the general f/t plugin behavior, it implements Related-mode.
+In addition to general f/t plugin behavior, it implements Related-mode.
 It provides alternative keys to jump to related character.
 
 The maximum number of characters recognized by fret is limited to 1000 chara-
@@ -32,22 +32,22 @@ to in-screen searching.
 Deprecated                                                   *fret-deprecated*
 
 - |fret_beacon|           Renamed to |fret_enable_beacon|
-- |fret_samekey_timeout|  Renamed to |fret_samekey_repeat|
+- |fret_samekey_repeat|  Renamed to |fret_samekey_chain|
 
 ==============================================================================
 USAGE                                                             *fret-usage*
 
 Type f (or F,t,T) to highlight the cursor line
 
-A: To move to an underline character, you need to type only once
-B: To move to a dark-colored character, you must type at least twice
-C: Gray characters are out of scope
+Case A: To move to an underline character, you need to type only once
+Case B: To move to a dark-colored character, you must type at least twice
+Case C: Gray characters are out of scope
 
-          Example input for moving to Case A.(Normal behavior)
+          Example input for moving to Case A (Normal behavior)
 
             step1: input "f"
 
-          If it is a lowercase letter
+          If the target is a lowercase letter:
             step2: input "<lowercase of the target alphabet>"
 
           Or an uppercase letter
@@ -60,13 +60,13 @@ C: Gray characters are out of scope
             step3: input "<alternative letter>"
 
           • The alternative letter is set to the character corresponding to
-            the key pressed when step2 is executed.
+            the key pressed during step2.
 
 Note
 • Operator commands can be executed even in Related-mode, but repeat commands
-  may differ from actual keystrokes due to internal command optimization.
+  might differ from the actual keystrokes due to internal command optimization.
   Even in such cases, you can display the contents of the repeat command
-  by configuring |fret_repeat_notify|
+  by configuring |fret_repeat_notify|.
 
 • Case B highlighting is for alphabets(and kana charactors)
 
@@ -78,11 +78,11 @@ FUNCTION                                                       *fret-function*
 
 setup({cfg})                                                    *fret.setup()*
 
-        Setup and activate fret
+        Setup and activate fret.nvim.
 
         Parameters: ~
               {fret_timeout}          (integer):  |g:fret_timeout|
-              {fret_samekey_repeat}   (integer):  |g:fret_samekey_repeat|
+              {fret_samekey_chain   (integer):  |g:fret_samekey_chain|
               {fret_enable_beacon}    (string):   |g:fret_enable_beacon|
               {fret_enable_kana}      (boolean):  |g:fret_enable_kana|
               {fret_enable_symbol}    (boolean):  |g:fret_enable_symbol|
@@ -105,13 +105,11 @@ g:fret_timeout                                                *g:fret_timeout*
 
         Type: `integer`, Default: `0`
 
-g:fret_samekey_repeat                                  *g:fret_samekey_repeat*
+g:fret_samekey_chain                                    *g:fret_samekey_chain*
 
-        Same key repeat timeout (ms). When the timeout elapses,
-        the command is terminated. Note that this function
-        cannot be used simultaneously with the beacon function.
+        Enable same-key-chain.
 
-        Type: `integer`, Default: `0`
+        Type: `boolean` Default: `false`
 
 g:fret_enable_kana                                        *g:fret_enable_kana*
 
@@ -134,7 +132,8 @@ g:fret_repeat_notify                                    *g:fret_repeat_notify*
 g:fret_smart_fold                                          *g:fret_smart_fold*
 
         When the cursor is at the beginning of a fold, unfold it.
-        If the cursor has not moved, it will automatically fold again.
+        If the cursor has not moved after unfolding, it will automatically
+        fold again.
 
         Type: `boolean,` Default: `false`
 
