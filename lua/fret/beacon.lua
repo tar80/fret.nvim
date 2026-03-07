@@ -48,15 +48,15 @@ end
 -- Flash around the cursor
 ---@param winid integer
 function M:around_cursor(winid)
-    local text = vim.api.nvim_get_current_line()
-    local cur_col = vim.api.nvim_win_get_cursor(winid)[2]
-    local charidx = compat.str_utfindex(text, 'utf-32', cur_col, false)
-    local cur_charwidth = helper.charwidth(text, charidx)
-    local next_charwidth = helper.charwidth(text, charidx + 1)
-    local winwidth = next_charwidth == 0 and cur_charwidth * 3 or cur_charwidth * 2 + next_charwidth
-    local row = vim.fn.winline() - 1
-    local col = vim.fn.wincol() - 1 - cur_charwidth
-    local relative = 'win'
+  local text = vim.api.nvim_get_current_line()
+  local cur_col = vim.api.nvim_win_get_cursor(winid)[2]
+  local charidx = compat.str_utfindex(text, 'utf-32', cur_col, false)
+  local cur_charwidth = helper.charwidth(text, charidx)
+  local next_charwidth = helper.charwidth(text, charidx + 1)
+  local winwidth = next_charwidth == 0 and cur_charwidth * 3 or cur_charwidth * 2 + next_charwidth
+  local row = vim.fn.winline() - 1
+  local col = vim.fn.wincol() - 1 - cur_charwidth
+  local relative = 'win'
   self:flash({ height = 1, width = math.max(1, winwidth), row = row, col = col, relative = relative })
 end
 

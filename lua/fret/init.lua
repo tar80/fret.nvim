@@ -52,10 +52,11 @@ function _session.new(mapkey, direction, till)
     enable_symbol = vim.g.fret_enable_symbol,
     enable_fold = vim.g.fret_smart_fold,
     timeout = vim.g.fret_timeout,
+    max_length = vim.g.fret_max_length,
     samekey_chain = vim.g.fret_samekey_chain,
     vcount = vim.v.count1,
     mapkey = mapkey,
-    reversive = direction == 'forward',
+    reversive = direction == 'backward',
     operative = helper.is_operator(),
     till = till,
     front_byteidx = 0,
@@ -385,7 +386,7 @@ function _session.get_keys(self, indices)
   end
 
   ---NOTE: If the line length exceeds 1000 characters, the iteration is aborted.
-  local i, limit = 1, 1000
+  local i, limit = 1, self.max_length
   local iter = vim.iter(ipairs(pos))
   local start_at = self:start_at_extmark(indices)
   local concealment_status = self:is_concealed()
@@ -750,6 +751,10 @@ function Fret.setup(opts)
       helper.set_hl(conf.hl_detail[vim.go.background])
     end,
   }, true)
+end
+
+function Fret._session(method, ...)
+  return _session[method](...)
 end
 
 return Fret

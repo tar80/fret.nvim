@@ -1,3 +1,5 @@
+---@meta
+
 ---@alias AltKeys 'lshift'|'rshift'
 ---@alias Beacon {hl:string,interval:integer,blend:integer,decay:integer,instance:table}
 ---@alias MapKeys 'fret_f'|'fret_F'|'fret_t'|'fret_T'
@@ -10,6 +12,7 @@
 
 ---@class Options
 ---@field fret_multi_label {filler: string, position: 'before'|'after'}
+---@field fret_max_length integer
 ---@field fret_timeout integer
 ---@field fret_samekey_chain boolean
 ---@field fret_samekey_repeat boolean @deprecated
@@ -37,6 +40,7 @@
 ---@field enable_beacon boolean
 ---@field multi_label string
 ---@field timeout integer
+---@field max_length integer
 ---@field samekey_chain boolean
 ---@field vcount integer
 ---@field mapkey string

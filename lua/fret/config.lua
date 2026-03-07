@@ -7,10 +7,10 @@ local MULTI_LABEL = { filler = ' ', position = 'after' }
 local L_SHIFT = 'JKLUIOPNMHY'
 local R_SHIFT = 'FDSAREWQVCXZGTB'
 local KEYS = {
-  fret_f = { key = 'f', direction = 'backward', till = 0 },
-  fret_F = { key = 'F', direction = 'forward', till = 0 },
-  fret_t = { key = 't', direction = 'backward', till = 1 },
-  fret_T = { key = 'T', direction = 'forward', till = 1 },
+  fret_f = { key = 'f', direction = 'forward', till = 0 },
+  fret_F = { key = 'F', direction = 'backward', till = 0 },
+  fret_t = { key = 't', direction = 'forward', till = 1 },
+  fret_T = { key = 'T', direction = 'backward', till = 1 },
 }
 local BEACON = {
   hl = 'FretAlternative',
@@ -55,6 +55,13 @@ local hl_detail = {
   },
 }
 
+local function validate_length(requested, default, threshold)
+  if type(requested) ~= 'number' then
+    return default
+  end
+  return math.max(math.floor(requested), threshold)
+end
+
 local function set_multi_label_pattern(opts)
   local label = opts.fret_multi_label or MULTI_LABEL
   local p = label.position == 'before' and '%s%%s' or '%%s%s'
@@ -96,6 +103,7 @@ function M.set_options(opts)
     end
     return true
   end, true)
+  validate('fret_max_length', opts.fret_max_length, 'number', true)
   validate('fret_timeout', opts.fret_timeout, 'number', true)
   validate('fret_samekey_chain', opts.fret_samekey_chain, 'boolean', true)
   validate('fret_enable_beacon', opts.fret_enable_beacon, 'boolean', true)
@@ -116,6 +124,7 @@ function M.set_options(opts)
   vim.g.fret_samekey_chain = opts.fret_samekey_chain
   vim.g.fret_smart_fold = opts.fret_smart_fold
   vim.g.fret_timeout = opts.fret_timeout or 0
+  vim.g.fret_max_length = validate_length(opts.fret_max_length, 1000, 500)
 
   if opts.mapkeys then
     register_keymap(opts.mapkeys)
