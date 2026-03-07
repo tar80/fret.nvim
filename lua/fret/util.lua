@@ -7,6 +7,9 @@ local M = {}
 ---@param ... any The value to be inserted and its position in the list.
 ---@return nil
 function M.tbl_insert(tbl, key, ...)
+  if type(tbl) ~= 'table' then
+    error("Argument 'tbl' must be a table.")
+  end
   local args = { ... }
   local pos, value
   if #args < 2 then
