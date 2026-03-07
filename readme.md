@@ -1,27 +1,26 @@
-# 🎸fret.nvim
+# 🎸 fret.nvim
 
-fret.nvim is provides enhanced f/t mapping for Neovim.  
-Move the cursor to the desired character with fewer keystrokes.
+**fret.nvim** provides enhanced `f`/`t` mappings for Neovim, allowing you to move the cursor to any character with fewer keystrokes.
 
-In addition to the general f/t plugin behavior, it implements Related-mode.  
-It provides alternate keys to jump to related character.
+Beyond standard horizontal movement, it features a unique **Related-mode**, providing intuitive alternative keys to jump to distant or recurring characters instantly.
 
 ## Features
 
-- [x] Related-mode is implemented
-- [x] Repeat-keys (`;` `,` `.`) are valid
-- [x] Always ignores uppercase and lowercase letters
-- [x] Supports Kana-moji
-- [x] Beacon flashes when cursor jumps
-- [x] Smart fold(automatically open and close folding)
-- [x] Same key chain
+- [x] **Related-mode**: Smart two-step jumping for distant targets.
+- [x] **Full Repeat Support**: Works seamlessly with `;`, `,`, and `.` (dot-repeat).
+- [x] **Case-Insensitive**: Always ignores case for faster recognition.
+- [x] **Multilingual**: Supports **Kana-moji** (Japanese) and Symbols.
+- [x] **Visual Feedback**: Beacon flashes upon jumping to help track your cursor.
+- [x] **Smart Fold**: Automatically opens/closes folds during searching.
+- [x] **Same-Key-Chain**: Rapidly jump through identical characters using a single key.
 
 [demo.mp4](https://github.com/tar80/fret.nvim/assets/45842304/b2957866-9184-4ea7-9b79-2b18dca17853)
 
-### New feature Same-Key-Chain function is now available
+### Same-Key-Chain function
 
-Pressing a lowercase key allows you to perform short, chained actions using the same key.
-This feature is enabled when the `g:fret_samekey_chain` variable is set to `true`.
+When enabled, pressing the same lowercase key allows for rapid, chained actions. This is perfect for stepping through multiple occurrences of the same character without re-initiating the search.
+
+Enable this by setting `fret_samekey_chain = true` in your configuration.
 
 ![same_key_chain](https://github.com/user-attachments/assets/ccef0487-07f6-40ba-992c-2278a953af7b)
 
@@ -31,46 +30,48 @@ This feature is enabled when the `g:fret_samekey_chain` variable is set to `true
 
 ## Installation
 
-- lazy.nvim
+Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
   'tar80/fret.nvim',
   opts = {
-    ...
+    -- Your configuration here
   },
 }
 ```
 
 ## Configuration
 
-- `mapkeys` field must be set to activate fret.nvim. Other fields are optional
+The mapkeys field must be set to activate fret.nvim. All other fields are optional.
 
 ```lua
 require('fret').setup({
-  fret_timeout = 0,
+  mapkeys = {
+    fret_f = 'f',
+    fret_F = 'F',
+    fret_t = 't',
+    fret_T = 'T',
+  },
+  -- Optional settings (defaults shown below)
+  fret_timeout = 0,         -- Timeout for input (ms). 0 is disabled.
+  fret_max_length = 1000,   -- Max characters analyzed per line (for performance).
   fret_enable_beacon = false,
   fret_enable_kana = false,
   fret_enable_symbol = false,
   fret_repeat_notify = false,
   fret_samekey_chain = false,
   fret_smart_fold = false,
-  fret_hlmode = 'replace',
+  fret_hlmode = 'replace',  -- 'replace' | 'combine' | 'blend'
   multi_label = {
-    filler = ' ',
-    position = 'before'
+    filler = ' ',           -- Multi-byte character alignment filler
+    position = 'before'     -- 'before' | 'after'
   },
   beacon_opts = {
     hl = 'FretAlternative',
     interval = 80,
     blend = 20,
     decay = 10
-  },
-  mapkeys = {
-    fret_f = 'f',
-    fret_F = 'F',
-    fret_t = 't',
-    fret_T = 'T',
   },
   altkeys = {
     lshift = 'JKLUIOPNMHY',
@@ -79,12 +80,20 @@ require('fret').setup({
 })
 ```
 
+## Usage
+
+1. Press f (or F/t/T).
+
+2. Direct Jump: Type the lowercase character you see underlined.
+
+3. Related-mode: Type the Uppercase version of a character to see "alternative labels" (Related-mode).
+   Then, press the corresponding alternative key to jump.
+
 <!-- ## Known issues -->
 
 ## Credits
 
-fret.nvim is inspired by vim-eft and fuzzy-motion.vim.  
-Check out these nice plugins.
+fret.nvim is inspired by:
 
 - [hrsh7th/vim-eft](https://github.com/hrsh7th/vim-eft)
 - [yuki-yano/fuzzy-motion.vim](https://github.com/yuki-yano/fuzzy-motion.vim)

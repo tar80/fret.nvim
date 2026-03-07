@@ -1,21 +1,21 @@
-*fret.txt*                                Brilliant horizontal cursor movement
+*fret.txt* Brilliant horizontal cursor movement
 
 Author:  tar80 <tar80master@google.com>
 License: MIT License
 
-CONTENTS                                                       *fret-contents*
+CONTENTS                                                        *fret-contents*
 
-Introduction                                               |fret-introduction|
-Deprecated                                                   |fret-deprecated|
-Usage                                                             |fret-usage|
-Interface                                                     |fret-interface|
-  function                                                     |fret-function|
-  variable                                                     |fret-variable|
-  configuration                                           |fret-configuration|
-  highlight                                                   |fret-highlight|
+Introduction                                                |fret-introduction|
+Deprecated                                                    |fret-deprecated|
+Usage                                                              |fret-usage|
+Interface                                                      |fret-interface|
+  function                                                      |fret-function|
+  variable                                                      |fret-variable|
+  configuration                                            |fret-configuration|
+  highlight                                                    |fret-highlight|
 
 ==============================================================================
-INTRODUCTION                                               *fret-introduction*
+INTRODUCTION                                                *fret-introduction*
 
 *fret.nvim* is f/t enhancement plugin for Neovim.
 Move the cursor to the desired character with fewer keystrokes.
@@ -23,25 +23,25 @@ Move the cursor to the desired character with fewer keystrokes.
 In addition to general f/t plugin behavior, it implements Related-mode.
 It provides alternative keys to jump to related character.
 
-The maximum number of characters recognized by fret is limited to 1000 chara-
-cters due to performance reasons. For cases consisting of tens of thousands
-of characters, such as minified code, please use a separate plugin dedicated
-to in-screen searching.
+The maximum number of characters recognized by fret is limited by
+|g:fret_max_length| (default: 1000) for performance reasons. For cases 
+consisting of tens of thousands of characters, such as minified code, 
+please use a separate plugin dedicated to in-screen searching.
 
 ==============================================================================
-Deprecated                                                   *fret-deprecated*
+DEPRECATED                                                    *fret-deprecated*
 
-- |fret_beacon|           Renamed to |fret_enable_beacon|
-- |fret_samekey_repeat|  Renamed to |fret_samekey_chain|
+- |fret_beacon|          Renamed to |g:fret_enable_beacon|
+- |fret_samekey_repeat|  Renamed to |g:fret_samekey_chain|
 
 ==============================================================================
-USAGE                                                             *fret-usage*
+USAGE                                                              *fret-usage*
 
-Type f (or F,t,T) to highlight the cursor line
+Type f (or F, t, T) to highlight the cursor line.
 
-Case A: To move to an underline character, you need to type only once
-Case B: To move to a dark-colored character, you must type at least twice
-Case C: Gray characters are out of scope
+Case A: To move to an underlined character, you need to type only once.
+Case B: To move to a dark-colored character, you must type at least twice.
+Case C: Gray characters are out of scope.
 
           Example input for moving to Case A (Normal behavior)
 
@@ -50,10 +50,10 @@ Case C: Gray characters are out of scope
           If the target is a lowercase letter:
             step2: input "<lowercase of the target alphabet>"
 
-          Or an uppercase letter
+          Or an uppercase letter:
             step2: input "<uppercase of the target alphabet>"
 
-          Example input for moving to Case B.(Related-mode)
+          Example input for moving to Case B (Related-mode)
 
             step1: input "f"
             step2: input "<uppercase of the target alphabet>"
@@ -62,28 +62,29 @@ Case C: Gray characters are out of scope
           • The alternative letter is set to the character corresponding to
             the key pressed during step2.
 
-Note
+Note:
 • Operator commands can be executed even in Related-mode, but repeat commands
   might differ from the actual keystrokes due to internal command optimization.
   Even in such cases, you can display the contents of the repeat command
-  by configuring |fret_repeat_notify|.
+  by configuring |g:fret_repeat_notify|.
 
-• Case B highlighting is for alphabets(and kana charactors)
+• Case B highlighting is for alphabets (and kana characters).
 
 ==============================================================================
-INTERFACE                                                     *fret-interface*
+INTERFACE                                                      *fret-interface*
 
 ------------------------------------------------------------------------------
-FUNCTION                                                       *fret-function*
+FUNCTION                                                        *fret-function*
 
-setup({cfg})                                                    *fret.setup()*
+setup({cfg})                                                     *fret.setup()*
 
         Setup and activate fret.nvim.
 
         Parameters: ~
               {fret_timeout}          (integer):  |g:fret_timeout|
-              {fret_samekey_chain   (integer):  |g:fret_samekey_chain|
-              {fret_enable_beacon}    (string):   |g:fret_enable_beacon|
+              {fret_max_length}       (integer):  |g:fret_max_length|
+              {fret_samekey_chain}    (boolean):  |g:fret_samekey_chain|
+              {fret_enable_beacon}    (boolean):  |g:fret_enable_beacon|
               {fret_enable_kana}      (boolean):  |g:fret_enable_kana|
               {fret_enable_symbol}    (boolean):  |g:fret_enable_symbol|
               {fret_repeat_notify}    (boolean):  |g:fret_repeat_notify|
@@ -94,66 +95,76 @@ setup({cfg})                                                    *fret.setup()*
               {mapkeys}               (table):    |fret-mapkeys|
               {altkeys}               (table):    |fret-altkeys|
 
-
 ------------------------------------------------------------------------------
-VARIABLE                                                       *fret-variable*
+VARIABLE                                                        *fret-variable*
 
-g:fret_timeout                                                *g:fret_timeout*
+g:fret_timeout                                                 *g:fret_timeout*
 
-        Key waiting time (ms). When the timeout elapses,
-        the command is terminated.
+        Key waiting time (ms). When the timeout elapses, the command is 
+        terminated.
 
         Type: `integer`, Default: `0`
 
-g:fret_samekey_chain                                    *g:fret_samekey_chain*
+g:fret_max_length                                           *g:fret_max_length*
+
+        The maximum number of characters to be analyzed per line.
+        Characters beyond this limit will be ignored for performance
+        reasons.
+
+        Note: A minimum threshold of 500 characters is enforced. If a
+        value less than 500 is specified, it will be treated as 500.
+
+        Type: `number`, Default: `1000`, Minimum: `500`
+
+g:fret_samekey_chain                                     *g:fret_samekey_chain*
 
         Enable same-key-chain.
 
-        Type: `boolean` Default: `false`
+        Type: `boolean`, Default: `false`
 
-g:fret_enable_kana                                        *g:fret_enable_kana*
+g:fret_enable_kana                                         *g:fret_enable_kana*
 
         Enable moving to kana characters.
 
         Type: `boolean`, Default: `false`
 
-g:fret_enable_symbol                                    *g:fret_enable_symbol*
+g:fret_enable_symbol                                     *g:fret_enable_symbol*
 
         Enable Related-mode for symbol characters.
 
         Type: `boolean`, Default: `false`
 
-g:fret_repeat_notify                                    *g:fret_repeat_notify*
+g:fret_repeat_notify                                     *g:fret_repeat_notify*
 
         Display dot-repeat commands with notification message.
 
         Type: `boolean`, Default: `false`
 
-g:fret_smart_fold                                          *g:fret_smart_fold*
+g:fret_smart_fold                                           *g:fret_smart_fold*
 
         When the cursor is at the beginning of a fold, unfold it.
         If the cursor has not moved after unfolding, it will automatically
         fold again.
 
-        Type: `boolean,` Default: `false`
+        Type: `boolean`, Default: `false`
 
-g:fret_hlmode                                                  *g:fret_hlmode*
+g:fret_hlmode                                                   *g:fret_hlmode*
 
         This defines how the background of highlighted characters is handled.
-        The value is the same as the "hl_mode" option of nvim_buf_set_extmark()
+        The value is the same as the "hl_mode" option of `nvim_buf_set_extmark()`
 
         Type: `string`, Default: `"replace"`
 
-g:fret_enable_beacon                                           *g:fret_beacon*
+g:fret_enable_beacon                                     *g:fret_enable_beacon*
 
-        Displays a beacon
+        Displays a beacon when jumping.
 
         Type: `boolean`, Default: `false`
 
 ------------------------------------------------------------------------------
-CONFIGURATION                                             *fret-configuration*
+CONFIGURATION                                              *fret-configuration*
 
-|fret.nvim| does not provide <Plug> keys.
+|fret.nvim| does not provide <Plug> keys directly for core movement.
 It automatically registers keymaps from the |fret-mapkeys| values.
 
 Default settings ~
@@ -174,8 +185,8 @@ beacon                                                           *fret-beacon*
 
         Beacon options.
         interval: integer   (milliseconds) interval to apply winblend
-        blend:[0-100]       the initial winblend value
-        decay:[0-100]       the decay value of the beacon
+        blend:    [0-100]   the initial winblend value
+        decay:    [0-100]   the decay value of the beacon
                             10-20 are probably effective
 
         Type: `table`
@@ -209,27 +220,27 @@ altkeys                                                         *fret-altkeys*
         }
 
 ------------------------------------------------------------------------------
-HIGHLIGHT                                                     *fret-highlight*
+HIGHLIGHT                                                      *fret-highlight*
 
 *FretCandidateFirst*
 
-        Used for the first matched character
+        Used for the first matched character.
 
 *FretCandidateSecond*
 
-        Used for the second matched character
+        Used for the second matched character.
 
 *FretCandidateSub*
 
-        Used for characters that are candidates in Related-mode
+        Used for characters that are candidates in Related-mode.
 
 *FretAlternative*
 
-        Used for alternative letters
+        Used for alternative letters.
 
 *FretIgnore*
 
-        Used for characters not covered by |fret.nvim|
+        Used for characters not covered by |fret.nvim|.
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:fen:fdl=0:fdm=marker:
