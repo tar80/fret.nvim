@@ -43,27 +43,25 @@ function M.is_operator(mode)
 end
 
 local function _value_converter(value)
-  local tbl = {}
   local t = type(value)
   if t == 'function' then
-    tbl = value()
-    return type(tbl) == 'table' and tbl or {}
-  elseif t == 'string' then
+    local res = value()
+    return type(res) == 'table' and res or {}
+  end
+  if t == 'string' then
     return { value }
-  elseif t == 'table' then
-    for att, _value in pairs(value) do
-      local att_t = type(_value)
-      if att_t == 'function' then
-        _value = _value()
-        if _value then
-          tbl[att] = _value
-        end
+  end
+  if t == 'table' then
+    local tbl = {}
+    for att, v in pairs(value) do
+      local att_t = (type(v) == 'function' and v() or v)
+      if att_t ~= nil then
+        tbl[att] = att_t
       end
-      tbl[att] = _value
     end
     return tbl
   end
-  return tbl
+  return { value }
 end
 
 -- Set default highlights
