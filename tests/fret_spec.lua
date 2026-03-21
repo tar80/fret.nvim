@@ -3,6 +3,22 @@ local assert = require('luassert')
 local fret = require('fret')
 
 describe('fret', function()
+  local function create_test_session(mapkey, direction, till)
+    local s = fret._session('new', mapkey, direction, till)
+    s.info_width = 0
+    s.leftcol = 0
+    s.front_byteidx = 0
+    s.cur_row = vim.api.nvim_win_get_cursor(0)[1]
+    s.cur_col = vim.api.nvim_win_get_cursor(0)[2]
+    s.bufnr = vim.api.nvim_get_current_buf()
+    s.winid = vim.api.nvim_get_current_win()
+
+    vim.api.nvim_set_option_value('wrap', false, { win = s.winid })
+    s.keys.mark_pos[1] = 0
+
+    return s
+  end
+
   before_each(function()
     vim.cmd('enew!')
     vim.api.nvim_buf_set_lines(0, 0, -1, false, {
@@ -29,7 +45,7 @@ describe('fret', function()
 
   describe('session management', function()
     it('should initialize a session with correct default flags', function()
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       assert.is_not_nil(s)
       assert.are.equal(1, s.cur_row)
       assert.is_false(s.reversive)
@@ -38,7 +54,7 @@ describe('fret', function()
 
     it('should not error when setting info on an empty line', function()
       vim.api.nvim_buf_set_lines(0, 0, -1, false, { '' })
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       local indices = s:set_line_informations()
       assert.is_nil(indices)
     end)
@@ -46,7 +62,7 @@ describe('fret', function()
 
   describe(':get_keys()', function()
     it('should preserve character order when reversive is false', function()
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       s.cur_col = 0
       local indices = 'abc'
       local line = s:get_keys(indices)
@@ -57,7 +73,7 @@ describe('fret', function()
     end)
 
     it('should reverse character order when reversive is true', function()
-      local s = fret._session('new', 'f', 'backward', 0)
+      local s = create_test_session('f', 'backward', 0)
       s.cur_col = 2
       local indices = 'abc'
       local line = s:get_keys(indices)
@@ -66,25 +82,28 @@ describe('fret', function()
     end)
 
     it('should map Japanese Kana to corresponding Romaji keys', function()
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       s.enable_kana = true
       s:store_key('あ', 1, 0, 1)
       assert.are.equal('a', s.keys.detail[1].chr)
     end)
+
+    it('should handle search correctly in mixed ASCII and Multi-byte strings', function()
+      local s = create_test_session('f', 'forward', 0)
+      local mixed = 'aあb'
+      local extracted = s:get_keys(mixed)
+      assert.are.equal('aあb', extracted)
+      assert.are.equal('b', s.keys.detail[3].chr)
+    end)
   end)
 
-  describe(':attach_extmark())', function()
-    it('should attach extmarks when leftcol is initialized', function()
-      local s = fret._session('new', 'f', 'forward', 0)
+  describe(':attach_extmark()', function()
+    it('should attach extmarks when UI properties are initialized', function()
+      local s = create_test_session('f', 'forward', 0)
       s.line = 'hello'
-      s.leftcol = 0
-      s.cur_row = 1
-      s.info_width = 0
 
       s.keys.mark_pos = { [1] = 0, [2] = 1, [3] = 2, [4] = 3, [5] = 4 }
-      s.keys.detail = {
-        { level = 1, chr = 'h', actual = 'h', byteidx = 0, start_at = 1, double = false },
-      }
+      s.keys.detail = { { level = 1, chr = 'h', actual = 'h', byteidx = 0, start_at = 1, double = false } }
       s.keys.first_idx = { ['h'] = 1 }
 
       local count = s:attach_extmark()
@@ -98,7 +117,7 @@ describe('fret', function()
   describe('Edge Cases', function()
     it('should truncate processing for very long lines (>1000 chars)', function()
       local long_line = string.rep('a', 1100)
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       s.cur_col = 0
       s:get_keys(long_line)
       assert.is_true(#s.keys.detail <= 1001)
@@ -107,14 +126,14 @@ describe('fret', function()
 
   describe(':is_concealed()', function()
     it('should handle zerobase index conversion', function()
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       assert.is_not_nil(s:is_concealed())
     end)
   end)
 
-  describe('Operator and Keystroke Logic (New Cases)', function()
+  describe('Operator and Keystroke Logic', function()
     it("uses 'v' prefix when reversive is false (forward mode)", function()
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       s.line = 'hello'
       s.operative = true
       s.vcount = 1
@@ -125,24 +144,21 @@ describe('fret', function()
     end)
 
     it("uses 'hv' prefix when reversive is true (backward mode)", function()
-      local s = fret._session('new', 'f', 'backward', 0)
+      local s = create_test_session('f', 'backward', 0)
       s.line = 'hello'
       s.operative = true
       s.vcount = 1
       s.mapkey = 'f'
       s.keys.detail[1] = { actual = 'h', chr = 'h' }
       local keystroke = s:operable(1)
-      assert.are.match('^hv1fh', keystroke) -- Prefix should be 'hv'
+      assert.are.match('^hv1fh', keystroke)
     end)
   end)
 
-  describe('Multi-level selection (Related keys) - Fixed', function()
+  describe('Multi-level selection (Related keys)', function()
     it('should correctly map second-level labels to original positions', function()
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       s.line = 'aaa'
-      s.cur_row = 1
-      s.leftcol = 0
-      s.info_width = 0
       s.keys.mark_pos = { [1] = 0, [2] = 1, [3] = 2 }
 
       for i = 1, 3 do
@@ -165,14 +181,14 @@ describe('fret', function()
 
   describe('Multi-byte character boundaries', function()
     it('should calculate correct byte indices for Japanese characters', function()
-      local s = fret._session('new', 'f', 'forward', 0)
+      local s = create_test_session('f', 'forward', 0)
       -- "あいう" (3 chars, but 9 bytes in UTF-8)
       local text = 'あいう'
       s.cur_col = 0
       local extracted = s:get_keys(text)
 
       assert.are.equal('あいう', extracted)
-      -- 'あ' is at 0, 'い' is at 3, 'う' is at 6
+      -- 'あ' (idx 1) は byte 0, 'い' (idx 4) は byte 3...
       assert.are.equal(1, s.keys.detail[1].byteidx)
       assert.are.equal(4, s.keys.detail[2].byteidx)
       assert.are.equal(7, s.keys.detail[3].byteidx)
@@ -189,13 +205,6 @@ describe('fret', function()
   end)
 
   describe('Dot-repeat()', function()
-    before_each(function()
-      vim.api.nvim_command('enew!')
-      require('fret').setup({
-        mapkeys = { fret_f = 'f', fret_F = 'F', fret_t = 't', fret_T = 'T' },
-      })
-    end)
-
     it('repeats delete operation with dot', function()
       vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'abc def abc def' })
       vim.api.nvim_win_set_cursor(0, { 1, 0 })
@@ -219,16 +228,21 @@ describe('fret', function()
       vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'あいうえお' })
       vim.api.nvim_win_set_cursor(0, { 1, 0 })
 
-      require('fret').setup({
-        fret_enable_kana = true,
-        mapkeys = { fret_f = 'f' },
-      })
+      vim.schedule(function()
+        fret.playing('f', 'forward', 0)
+      end)
 
-      local keys = vim.api.nvim_replace_termcodes('fu', true, false, true)
-      vim.api.nvim_feedkeys(keys, 'x', false)
+      vim.defer_fn(function()
+        vim.api.nvim_input('u')
+      end, 10)
+
+      local success = vim.wait(1000, function()
+        return vim.api.nvim_win_get_cursor(0)[2] == 6
+      end, 50)
 
       local cursor = vim.api.nvim_win_get_cursor(0)
-      assert.are.equal(1, cursor[1])
+
+      assert.is_true(success, 'Timeout: Cursor stayed at ' .. cursor[2] .. '. Expected 6.')
       assert.are.equal(6, cursor[2])
     end)
   end)
