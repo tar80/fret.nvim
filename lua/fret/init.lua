@@ -724,7 +724,9 @@ function Fret.same_key_chain()
         vim.api.nvim_input(Session.lastmap .. input)
       else
         local cur_row = api.nvim_win_get_cursor(0)[1]
-        api.nvim_buf_clear_namespace(Session.bufnr, Fret.ns, cur_row - 1, cur_row)
+        if Session.bufnr and vim.api.nvim_buf_is_valid(Session.bufnr) then
+          api.nvim_buf_clear_namespace(Session.bufnr, Fret.ns, cur_row - 1, cur_row)
+        end
         vim.api.nvim_input(chain_key)
       end
     end
